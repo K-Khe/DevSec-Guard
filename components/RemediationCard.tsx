@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Check, Copy, Loader2, RotateCw, Sparkles } from "lucide-react";
-import type { AnalysisResult } from "@/lib/types";
-import { Card } from "./ui";
+import { Check, Copy, Cpu, EyeOff, Lightbulb, Loader2, Lock, RotateCw, Sparkles } from "lucide-react";
+import type { AnalysisResult, ScanResult } from "@/lib/types";
+import { Card, Pill } from "./ui";
 
 const TOKEN =
-  /(\/\/.*|#.*)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|\b(const|let|export|default|async|await|return|import|from|function|module|location|add_header|always|User-agent|Disallow|Allow)\b|(\b\d+\b)/g;
+  /(\/\/.*|#.*)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|\b(const|let|export|default|async|await|return|import|from|function|module|location|add_header|always|User-agent|Disallow|Allow|headers|source|key|value|poweredByHeader|server_tokens|fastcgi_hide_header|proxy_hide_header|expose_php|true|false)\b|(\b\d+\b)/g;
 
 const COLORS = ["text-slate-500 italic", "text-neon-green", "text-neon-purple", "text-neon-cyan"];
 
@@ -72,41 +72,122 @@ function gradeColor(grade: string) {
 }
 
 interface Props {
+  scan: ScanResult;
   analysis: AnalysisResult | null;
   loading: boolean;
   error: string | null;
   onRetry: () => void;
 }
 
-export default function RemediationCard({ analysis, loading, error, onRetry }: Props) {
+export default function RemediationCard({ scan, analysis, loading, error, onRetry }: Props) {
+  const displayGrade = analysis?.grade ?? scan.grade;
+  const displayScore = analysis?.score ?? scan.score;
+  const stack = scan.detectedStack ?? [];
+
   return (
     <Card title="AI Remediation" icon={<Sparkles className="h-5 w-5" />} accent="purple" className="md:col-span-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3 text-xs text-slate-400">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 font-mono text-slate-400">
+            <Cpu className="h-3.5 w-3.5 text-neon-cyan" />
+            Detected Stack:
+          </span>
+          {stack.length > 0 ? (
+            stack.map((item) => (
+              <Pill key={item} tone="ok">
+                {item}
+              </Pill>
+            ))
+          ) : (
+            <Pill tone="muted">Unknown (Generic / nginx)</Pill>
+          )}
+        </div>
+        {analysis && (
+          <div className="flex items-center gap-1.5">
+            {analysis.mode === "local" ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-neon-green/40 bg-neon-green/10 px-2.5 py-0.5 font-mono text-[11px] text-neon-green">
+                <Lock className="h-3 w-3" />
+                100% Local Engine (Zero External AI)
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-neon-purple/40 bg-neon-purple/10 px-2.5 py-0.5 font-mono text-[11px] text-neon-purple">
+                <EyeOff className="h-3 w-3" />
+                Target Anonymized (redacted-target.invalid)
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
       {loading && (
-        <p className="flex items-center gap-2 text-sm text-slate-400" role="status">
-          <Loader2 className="h-4 w-4 animate-spin text-neon-purple" />
-          The auditor is reviewing the findings and writing a fix.
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <p className="flex items-center gap-2 text-sm text-slate-400" role="status">
+            <Loader2 className="h-4 w-4 animate-spin text-neon-purple" />
+            The auditor is reviewing the findings and writing a tailored fix...
+          </p>
+          <div className="flex items-baseline gap-2 font-mono">
+            <span className="text-xs text-slate-500">Baseline:</span>
+            <span className={`text-2xl font-bold ${gradeColor(displayGrade)}`}>{displayGrade}</span>
+            <span className="text-sm text-slate-400">({displayScore}/100)</span>
+          </div>
+        </div>
       )}
 
       {error && !loading && (
-        <div className="flex flex-wrap items-center gap-3 text-sm text-red-400" role="alert">
-          {error}
-          <button
-            onClick={onRetry}
-            className="inline-flex items-center gap-1.5 rounded-md border border-red-400/40 px-3 py-1.5 text-red-300 hover:bg-red-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-          >
-            <RotateCw className="h-3.5 w-3.5" />
-            Retry analysis
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3 text-sm text-red-400" role="alert">
+            {error}
+            <button
+              onClick={onRetry}
+              className="inline-flex items-center gap-1.5 rounded-md border border-red-400/40 px-3 py-1.5 text-red-300 hover:bg-red-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+            >
+              <RotateCw className="h-3.5 w-3.5" />
+              Retry analysis
+            </button>
+          </div>
+          <div className="flex items-baseline gap-2 font-mono">
+            <span className="text-xs text-slate-500">Baseline:</span>
+            <span className={`text-2xl font-bold ${gradeColor(displayGrade)}`}>{displayGrade}</span>
+            <span className="text-sm text-slate-400">({displayScore}/100)</span>
+          </div>
         </div>
       )}
 
       {analysis && !loading && (
-        <div className="grid gap-6 lg:grid-cols-[200px_1fr]">
+        <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
           <div>
             <p className="text-sm text-slate-400">Security grade</p>
-            <p className={`font-mono text-7xl font-bold ${gradeColor(analysis.grade)}`}>{analysis.grade}</p>
+            <div className="mt-1 flex items-baseline gap-3">
+              <p className={`font-mono text-7xl font-bold leading-none ${gradeColor(displayGrade)}`}>{displayGrade}</p>
+              <span className="rounded-md border border-white/10 bg-ink-800 px-2.5 py-1 font-mono text-sm text-slate-300">
+                {displayScore}/100
+              </span>
+            </div>
             <p className="mt-3 text-sm leading-relaxed text-slate-300">{analysis.summary}</p>
+
+            {analysis.laymanSummary && (
+              <div className="mt-4 rounded-lg border border-neon-cyan/30 bg-neon-cyan/10 p-3.5">
+                <p className="mb-1 flex items-center gap-1.5 font-mono text-xs font-semibold text-neon-cyan">
+                  <Lightbulb className="h-3.5 w-3.5 shrink-0" />
+                  สรุปเปรียบเทียบสำหรับคนทั่วไป (Layman Summary)
+                </p>
+                <p className="text-xs leading-relaxed text-slate-200">{analysis.laymanSummary}</p>
+              </div>
+            )}
+
+            {analysis.findings && analysis.findings.length > 0 && (
+              <div className="mt-4 border-t border-white/10 pt-3">
+                <p className="mb-2 font-mono text-xs uppercase tracking-wider text-slate-400">Key Findings</p>
+                <ul className="space-y-1.5 text-xs leading-relaxed text-slate-300">
+                  {analysis.findings.map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-neon-purple" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
           <CodeBlock code={analysis.code} language={analysis.language} />
         </div>

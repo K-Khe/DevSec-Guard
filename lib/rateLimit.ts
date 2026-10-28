@@ -1,13 +1,14 @@
 /**
- * Simple in-memory sliding-window rate limiter.
+ * Sliding-window rate limiter with an Upstash Redis production backend.
  *
- * Limitations (by design, to stay dependency-free):
- * - State is per server instance. On serverless / multi-instance deployments each
- *   instance has its own counters, so use Redis/Upstash or similar for strict limits.
+ * - Development without Redis credentials uses a per-instance in-memory fallback.
+ * - With Upstash credentials, the Redis window is shared atomically by all instances.
  * - The client IP comes from proxy headers. Those are trustworthy only behind a proxy
  *   that overwrites them (Vercel, nginx with `proxy_set_header`, etc.). A global
  *   bucket is provided as a backstop that can't be bypassed by spoofing IPs.
  */
+
+import { createHash, randomUUID } from "node:crypto";
 
 interface Bucket {
   hits: number[];
@@ -37,6 +38,7 @@ export interface RateLimitResult {
   ok: boolean;
   remaining: number;
   retryAfterSec: number;
+  backend: "upstash" | "memory";
 }
 
 function sweep(now: number, maxWindowMs: number) {
@@ -58,8 +60,8 @@ function sweep(now: number, maxWindowMs: number) {
   }
 }
 
-/** Records a hit for `key` under `rule` and reports whether it is allowed. */
-export function hit(rule: RateLimitRule, key: string, now = Date.now()): RateLimitResult {
+/** Records a development-only local hit for `key` under `rule`. */
+function hitLocal(rule: RateLimitRule, key: string, now = Date.now()): RateLimitResult {
   sweep(now, rule.windowMs);
   const id = `${rule.name}:${key}`;
   const bucket = store.buckets.get(id) ?? { hits: [] };
@@ -69,12 +71,113 @@ export function hit(rule: RateLimitRule, key: string, now = Date.now()): RateLim
   if (bucket.hits.length >= rule.limit) {
     store.buckets.set(id, bucket);
     const retryAfterMs = bucket.hits[0] + rule.windowMs - now;
-    return { ok: false, remaining: 0, retryAfterSec: Math.max(1, Math.ceil(retryAfterMs / 1000)) };
+    return {
+      ok: false,
+      remaining: 0,
+      retryAfterSec: Math.max(1, Math.ceil(retryAfterMs / 1000)),
+      backend: "memory",
+    };
   }
 
   bucket.hits.push(now);
   store.buckets.set(id, bucket);
-  return { ok: true, remaining: rule.limit - bucket.hits.length, retryAfterSec: 0 };
+  return {
+    ok: true,
+    remaining: rule.limit - bucket.hits.length,
+    retryAfterSec: 0,
+    backend: "memory",
+  };
+}
+
+export class RateLimitStoreError extends Error {}
+
+const UPSTASH_WINDOW_SCRIPT = `
+local cutoff = tonumber(ARGV[1])
+local limit = tonumber(ARGV[2])
+local now = tonumber(ARGV[3])
+local member = ARGV[4]
+local window = tonumber(ARGV[5])
+redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', cutoff)
+local count = redis.call('ZCARD', KEYS[1])
+if count >= limit then
+  local oldest = redis.call('ZRANGE', KEYS[1], 0, 0, 'WITHSCORES')
+  return {0, count, tonumber(oldest[2])}
+end
+redis.call('ZADD', KEYS[1], now, member)
+redis.call('PEXPIRE', KEYS[1], window)
+return {1, count + 1, 0}
+`;
+
+function opaqueKey(value: string) {
+  const salt = process.env.RATE_LIMIT_KEY_SALT ?? "";
+  return createHash("sha256").update(`${salt}:${value}`).digest("hex");
+}
+
+function upstashConfig() {
+  const url = process.env.UPSTASH_REDIS_REST_URL?.trim().replace(/\/$/, "");
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
+  const namespace = process.env.RATE_LIMIT_NAMESPACE?.trim() || "devsec-guard";
+  return { url, token, namespace };
+}
+
+async function hitUpstash(
+  url: string,
+  token: string,
+  namespace: string,
+  rule: RateLimitRule,
+  key: string,
+  now: number,
+): Promise<RateLimitResult> {
+  const redisKey = `${namespace}:rate-limit:${rule.name}:${opaqueKey(key)}`;
+  const command = [
+    "EVAL",
+    UPSTASH_WINDOW_SCRIPT,
+    "1",
+    redisKey,
+    String(now - rule.windowMs),
+    String(rule.limit),
+    String(now),
+    `${now}:${randomUUID()}`,
+    String(rule.windowMs),
+  ];
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(command),
+      signal: AbortSignal.timeout(2_000),
+      cache: "no-store",
+    });
+  } catch {
+    throw new RateLimitStoreError("Rate-limit store is unavailable.");
+  }
+  const payload = (await response.json().catch(() => null)) as { result?: unknown; error?: string } | null;
+  if (!response.ok || payload?.error || !Array.isArray(payload?.result)) {
+    throw new RateLimitStoreError("Rate-limit store is unavailable.");
+  }
+  const [allowed, count, oldest] = payload.result.map(Number);
+  if (allowed === 1) {
+    return {
+      ok: true,
+      remaining: Math.max(0, rule.limit - count),
+      retryAfterSec: 0,
+      backend: "upstash",
+    };
+  }
+  return {
+    ok: false,
+    remaining: 0,
+    retryAfterSec: Math.max(1, Math.ceil((oldest + rule.windowMs - now) / 1000)),
+    backend: "upstash",
+  };
+}
+
+/** Uses a shared Upstash window when configured; otherwise uses the local development fallback. */
+export async function hit(rule: RateLimitRule, key: string, now = Date.now()): Promise<RateLimitResult> {
+  const { url, token, namespace } = upstashConfig();
+  if (url && token) return hitUpstash(url, token, namespace, rule, key, now);
+  return hitLocal(rule, opaqueKey(key), now);
 }
 
 /** Best-effort client IP from common proxy headers. */
@@ -88,21 +191,52 @@ export function clientIp(req: Request): string {
  * Applies a per-IP rule and optional global rule. Returns a 429 response when
  * limited, or null when the request may proceed.
  */
-export function enforceRateLimit(
+export async function enforceRateLimit(
   req: Request,
   perIp: RateLimitRule,
   global?: RateLimitRule,
-): Response | null {
-  const ipResult = hit(perIp, clientIp(req));
-  const globalResult = ipResult.ok && global ? hit(global, "all") : null;
+): Promise<Response | null> {
+  let ipResult: RateLimitResult;
+  let globalResult: RateLimitResult | null;
+  try {
+    ipResult = await hit(perIp, clientIp(req));
+    globalResult = ipResult.ok && global ? await hit(global, "all") : null;
+  } catch (error) {
+    if (error instanceof RateLimitStoreError) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit service is temporarily unavailable. Please retry." }),
+        {
+          status: 503,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+    throw error;
+  }
   const blocked = !ipResult.ok ? ipResult : globalResult && !globalResult.ok ? globalResult : null;
   if (!blocked) return null;
+
+  const triggeredRule = !ipResult.ok ? perIp.name : global!.name;
+  console.info(
+    JSON.stringify({
+      ts: new Date().toISOString(),
+      type: "security_audit",
+      action: "rate_limit.exceeded",
+      actor: opaqueKey(clientIp(req)).slice(0, 16),
+      status: 429,
+      meta: { rule: triggeredRule, backend: blocked.backend, retryAfterSec: blocked.retryAfterSec },
+    }),
+  );
 
   return new Response(
     JSON.stringify({ error: `Too many requests. Please wait ${blocked.retryAfterSec}s and try again.` }),
     {
       status: 429,
-      headers: { "Content-Type": "application/json", "Retry-After": String(blocked.retryAfterSec) },
+      headers: {
+        "Content-Type": "application/json",
+        "Retry-After": String(blocked.retryAfterSec),
+        "X-RateLimit-Backend": blocked.backend,
+      },
     },
   );
 }

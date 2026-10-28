@@ -22,7 +22,9 @@ DevSec Guard is a Next.js web app that runs a quick, non-intrusive security chec
 
 - **SSRF guard:** only `http`/`https` URLs are accepted. Hostnames are resolved, and loopback, private, link-local (cloud metadata), CGNAT, benchmarking, documentation, multicast and reserved ranges are rejected. IPv6 transition forms that embed a private IPv4 address are rejected too (`::ffff:7f00:1`, `64:ff9b::/96`, `2002::/16`, …). Every redirect hop is validated again.
 - **Bounded I/O:** every outbound request has a timeout, uses `cache: no-store`, and reads only a limited number of bytes from the response.
-- **Rate limiting:** an in-memory sliding-window limiter applies per client IP on both API routes. `/api/analyze` also has a global cap, so the AI key is protected even if an attacker rotates IPs.
+- **Rate limiting:** an Upstash Redis atomic sliding-window limiter (`UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`) applies per client IP across all instances, with an automatic in-memory fallback for local development. `/api/analyze` also has a global cap, so the AI key is protected even if an attacker rotates IPs.
+- **Secret-free audit logging:** `lib/audit.ts` emits structured JSON events (`scan.completed`, `scan.blocked`, `analyze.completed`, `rate_limit.exceeded`, `policy.denied`) with hashed client identifiers (`RATE_LIMIT_KEY_SALT`) and automatic redaction of API keys, tokens, credentials, and sensitive query parameters.
+- **Authorization & usage policy:** `lib/policy.ts` enforces explicit user permission attestation (`authorized: true`), blocks restricted domains (`.gov`, `.mil`, plus `SCAN_BLOCKED_HOSTS`), supports enterprise domain scoping (`SCAN_ALLOWED_HOSTS`), and supports optional constant-time API token authentication (`SCANNER_ACCESS_TOKEN`).
 - **Prompt-injection hardening:** the scan payload is rebuilt field by field. Strings are flattened, control characters and backticks/angle brackets are stripped, and lengths are capped. The data goes inside a `<scan_data>` block that the system prompt marks as untrusted.
 - **Secret hygiene:** the Gemini key is sent in the `x-goog-api-key` header (never in the URL). Errors from the AI provider are logged on the server, and the client only sees a generic message.
 - **The app's own headers:** CSP, `X-Frame-Options: DENY`, HSTS, `nosniff`, `Referrer-Policy` and `Permissions-Policy` are set in `next.config.mjs`.
@@ -67,7 +69,9 @@ devsec-guard/
 │   └── ui.tsx                   # Card / Pill primitives
 ├── lib/
 │   ├── validate.ts              # URL normalization, SSRF guard, safeFetch, readText
-│   ├── rateLimit.ts             # In-memory sliding-window rate limiter
+│   ├── rateLimit.ts             # Upstash Redis + in-memory fallback sliding-window limiter
+│   ├── audit.ts                 # Structured JSON audit logger with secret redaction
+│   ├── policy.ts                # Authorization token check, attestation & host policy
 │   └── types.ts                 # ScanResult / AnalysisResult types
 ├── next.config.mjs              # Security headers for the app itself
 └── tailwind.config.ts
@@ -114,6 +118,15 @@ RATE_LIMIT_ANALYZE_GLOBAL_PER_MIN=30  # all clients combined, /api/analyze
 | `RATE_LIMIT_SCAN_PER_MIN` | No | `10` | Per client IP. |
 | `RATE_LIMIT_ANALYZE_PER_MIN` | No | `5` | Per client IP. |
 | `RATE_LIMIT_ANALYZE_GLOBAL_PER_MIN` | No | `30` | Shared across all clients. This is the hard ceiling on AI spend. |
+| `UPSTASH_REDIS_REST_URL` | Production | none | Upstash Redis REST endpoint for a cross-instance sliding window. |
+| `UPSTASH_REDIS_REST_TOKEN` | Production | none | Server-side Upstash token; never expose it to the browser. |
+| `RATE_LIMIT_KEY_SALT` | Production | none | Random secret used to hash client identities before writing Redis keys and audit logs. |
+| `RATE_LIMIT_NAMESPACE` | No | `devsec-guard` | Prefix for the app's Redis keys. |
+| `AUDIT_LOG_ENABLED` | No | `true` | Set to `false` to disable structured JSON audit logging. |
+| `REQUIRE_SCAN_ATTESTATION` | No | `true` | Requires `"authorized": true` in `/api/scan` requests confirming domain ownership/permission. |
+| `SCANNER_ACCESS_TOKEN` | No | none | Optional shared secret required via `x-scanner-token` or `Authorization: Bearer <token>`. |
+| `SCAN_ALLOWED_HOSTS` | No | none | Optional comma-separated allowlist (e.g. `example.com,*.mycompany.com`). When set, all other hosts are rejected. |
+| `SCAN_BLOCKED_HOSTS` | No | `.gov,.mil` | Additional comma-separated hostnames or suffixes to block. |
 
 > [!CAUTION]
 > `.env*.local` is git-ignored. Never commit real API keys. If a key has been committed or shared, rotate it.
@@ -174,7 +187,7 @@ All errors are returned as `{ "error": "<message>" }`:
 
 ## Deployment notes and limitations
 
-- **Rate limiting is per instance.** On serverless or multi-instance hosts every instance keeps its own counters. For strict limits, back `lib/rateLimit.ts` with Redis or Upstash.
+- **Rate limiting:** with `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`, the app uses an atomic Redis sliding window shared by every instance. Without both values (intended for local development), it falls back to in-memory limits per instance.
 - **Client IP trust.** The limiter reads `x-real-ip` / `x-forwarded-for`. These headers are only reliable behind a proxy that overwrites them (Vercel, or nginx with `proxy_set_header`). The global analyze cap is the backstop against spoofed IPs.
 - **DNS rebinding.** Hostnames are resolved and checked before each request, but `fetch` resolves them again on its own. Fully closing this gap requires pinning the resolved IP in a custom HTTP agent.
 - **CSP.** The app's CSP allows `'unsafe-inline'` scripts because Next.js injects inline bootstrap scripts. Switch to a nonce-based CSP via middleware for stricter protection.
