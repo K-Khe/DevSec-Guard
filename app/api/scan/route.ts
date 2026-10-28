@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ScanError, normalizeUrl, readText, safeFetch } from "@/lib/validate";
 import type { BotRule, HeaderCheck, LeakCheck, ScanResult } from "@/lib/types";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -12,9 +13,46 @@ const LEAK_PATHS = [
   { path: "/.git/HEAD", signature: /^ref:\s*refs\//m },
 ];
 
-/** Returns, for each bot, whether a matching User-agent group has `Disallow: /`. */
+interface RobotsRule {
+  allow: boolean;
+  pattern: string;
+}
+
+/** Converts a robots.txt path pattern (supports `*` and a trailing `$`) to a RegExp. */
+function patternToRegex(pattern: string): RegExp {
+  const anchored = pattern.endsWith("$");
+  const body = (anchored ? pattern.slice(0, -1) : pattern)
+    .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
+    .replace(/\*/g, ".*");
+  return new RegExp(`^${body}${anchored ? "$" : ""}`);
+}
+
+/**
+ * RFC 9309 evaluation of whether `path` is disallowed: the most specific (longest)
+ * matching rule wins, and on a tie `Allow` wins. Empty `Disallow:` lines are no-ops.
+ */
+function isDisallowed(rules: RobotsRule[], path: string): boolean {
+  let best: RobotsRule | null = null;
+  for (const rule of rules) {
+    if (!rule.pattern) continue;
+    if (!patternToRegex(rule.pattern).test(path)) continue;
+    if (
+      !best ||
+      rule.pattern.length > best.pattern.length ||
+      (rule.pattern.length === best.pattern.length && rule.allow)
+    ) {
+      best = rule;
+    }
+  }
+  return !!best && !best.allow;
+}
+
+/**
+ * Returns, for each bot, whether the site root is disallowed for it.
+ * Bot-specific groups take precedence; if none match, the `User-agent: *` group applies.
+ */
 function parseRobots(text: string): BotRule[] {
-  const groups: { agents: string[]; disallow: string[] }[] = [];
+  const groups: { agents: string[]; rules: RobotsRule[] }[] = [];
   let current: (typeof groups)[number] | null = null;
   let lastWasAgent = false;
 
@@ -26,23 +64,28 @@ function parseRobots(text: string): BotRule[] {
     const value = m[2].trim();
     if (key === "user-agent") {
       if (!current || !lastWasAgent) {
-        current = { agents: [], disallow: [] };
+        current = { agents: [], rules: [] };
         groups.push(current);
       }
       current.agents.push(value.toLowerCase());
       lastWasAgent = true;
     } else {
       lastWasAgent = false;
-      if (key === "disallow" && current) current.disallow.push(value);
+      if ((key === "disallow" || key === "allow") && current) {
+        current.rules.push({ allow: key === "allow", pattern: value });
+      }
     }
   }
 
-  return AI_BOTS.map((name) => ({
-    name,
-    blocked: groups.some(
-      (g) => g.agents.includes(name.toLowerCase()) && g.disallow.some((d) => d === "/")
-    ),
-  }));
+  const rulesFor = (agent: string) =>
+    groups.filter((g) => g.agents.includes(agent)).flatMap((g) => g.rules);
+  const wildcardRules = rulesFor("*");
+
+  return AI_BOTS.map((name) => {
+    const specific = groups.some((g) => g.agents.includes(name.toLowerCase()));
+    const rules = specific ? rulesFor(name.toLowerCase()) : wildcardRules;
+    return { name, blocked: isDisallowed(rules, "/") };
+  });
 }
 
 async function checkRobots(origin: string): Promise<ScanResult["robots"]> {
@@ -91,6 +134,9 @@ async function checkLeak(origin: string, target: (typeof LEAK_PATHS)[number]): P
 
 export async function POST(req: Request) {
   try {
+    const limited = enforceRateLimit(req, RATE_LIMITS.scan);
+    if (limited) return limited;
+
     const body = await req.json().catch(() => null);
     const url = await normalizeUrl(body?.url);
     const origin = url.origin;
@@ -121,7 +167,7 @@ export async function POST(req: Request) {
       {
         key: "hsts",
         label: "Strict-Transport-Security",
-        present: !!hsts && origin.startsWith("https"),
+        present: !!hsts && mainRes.finalUrl.protocol === "https:",
         value: hsts,
       },
     ];
