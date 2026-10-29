@@ -36,7 +36,7 @@ beforeEach(() => {
 
 async function runScan() {
   const response = await POST(
-    new Request("https://app.test/api/scan", { method: "POST", body: JSON.stringify({ url: "example.test" }) }),
+    new Request("https://app.test/api/scan", { method: "POST", body: JSON.stringify({ url: "example.test", authorized: true }) }),
   );
   return response.json();
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, FileJson, Mail } from "lucide-react";
+import { Download, FileJson, Mail, Printer } from "lucide-react";
 import type { AnalysisResult, ScanResult } from "@/lib/types";
 
 function escapeHtml(value: string) {
@@ -31,11 +31,61 @@ export default function ReportActions({ scan, analysis }: { scan: ScanResult; an
     window.location.href = `mailto:?subject=${encodeURIComponent(`Security report: ${new URL(scan.url).hostname}`)}&body=${encodeURIComponent(body)}`;
   }
 
+  function printReport() {
+    const previousTitle = document.title;
+    document.title = fileStem;
+    window.addEventListener("afterprint", () => {
+      document.title = previousTitle;
+    }, { once: true });
+    window.print();
+  }
+
+  const findings = analysis?.findings ?? scan.htmlFindings.map((finding) => finding.title);
+  const missingHeaders = scan.headers.items.filter((header) => header.state !== "strong");
+
   return (
-    <div className="mt-5 flex flex-wrap justify-end gap-2">
-      <button onClick={() => download(`${fileStem}.json`, "application/json", JSON.stringify(report, null, 2))} className="inline-flex items-center gap-2 rounded-md border border-white/10 px-3 py-2 text-xs text-slate-300 hover:border-neon-cyan/50 hover:text-neon-cyan"><FileJson className="h-3.5 w-3.5" />Export JSON</button>
-      <button onClick={exportHtml} className="inline-flex items-center gap-2 rounded-md border border-white/10 px-3 py-2 text-xs text-slate-300 hover:border-neon-cyan/50 hover:text-neon-cyan"><Download className="h-3.5 w-3.5" />Export HTML</button>
-      <button onClick={emailSummary} className="inline-flex items-center gap-2 rounded-md border border-white/10 px-3 py-2 text-xs text-slate-300 hover:border-neon-cyan/50 hover:text-neon-cyan"><Mail className="h-3.5 w-3.5" />Email summary</button>
-    </div>
+    <>
+      <div className="mt-5 flex flex-wrap justify-end gap-2">
+        <button onClick={printReport} className="inline-flex items-center gap-2 rounded-md border border-neon-cyan/40 bg-neon-cyan/10 px-3 py-2 text-xs text-neon-cyan hover:bg-neon-cyan/20"><Printer className="h-3.5 w-3.5" />Export PDF</button>
+        <button onClick={() => download(`${fileStem}.json`, "application/json", JSON.stringify(report, null, 2))} className="inline-flex items-center gap-2 rounded-md border border-white/10 px-3 py-2 text-xs text-slate-300 hover:border-neon-cyan/50 hover:text-neon-cyan"><FileJson className="h-3.5 w-3.5" />Export JSON</button>
+        <button onClick={exportHtml} className="inline-flex items-center gap-2 rounded-md border border-white/10 px-3 py-2 text-xs text-slate-300 hover:border-neon-cyan/50 hover:text-neon-cyan"><Download className="h-3.5 w-3.5" />Export HTML</button>
+        <button onClick={emailSummary} className="inline-flex items-center gap-2 rounded-md border border-white/10 px-3 py-2 text-xs text-slate-300 hover:border-neon-cyan/50 hover:text-neon-cyan"><Mail className="h-3.5 w-3.5" />Email summary</button>
+      </div>
+
+      <article className="audit-print" aria-hidden="true">
+        <header>
+          <p>DEVSEC GUARD · EXTERNAL SECURITY REPORT</p>
+          <h1>Security assessment</h1>
+          <dl className="audit-print-meta">
+            <div><dt>Target</dt><dd>{scan.finalUrl ?? scan.url}</dd></div>
+            <div><dt>Scanned at</dt><dd>{new Date(scan.scannedAt).toLocaleString()}</dd></div>
+            <div><dt>HTTP status</dt><dd>{scan.headers.status ?? "Unavailable"}</dd></div>
+          </dl>
+        </header>
+
+        <section className="audit-print-score">
+          <div><span>DevSec posture</span><strong>{analysis?.grade ?? scan.grade}</strong><small>{analysis?.score ?? scan.score}/100</small></div>
+          <p>Deterministic assessment based on the response received at scan time. Validate findings before remediation.</p>
+        </section>
+
+        <section>
+          <h2>Security headers requiring attention</h2>
+          {missingHeaders.length ? <table><thead><tr><th>Header</th><th>Status</th><th>Observed value</th></tr></thead><tbody>{missingHeaders.map((header) => <tr key={header.key}><td>{header.label}</td><td>{header.state}</td><td>{header.value ?? "Not present"}</td></tr>)}</tbody></table> : <p>All measured security headers were strong at scan time.</p>}
+        </section>
+
+        <section>
+          <h2>Development-file exposure checks</h2>
+          <table><thead><tr><th>Path</th><th>Status</th><th>Result</th></tr></thead><tbody>{scan.leaks.map((leak) => <tr key={leak.path}><td>{leak.path}</td><td>{leak.status ?? "—"}</td><td>{leak.state}</td></tr>)}</tbody></table>
+        </section>
+
+        <section>
+          <h2>Key findings</h2>
+          {findings.length ? <ul>{findings.map((finding, index) => <li key={index}>{finding}</li>)}</ul> : <p>No additional high-signal findings were reported.</p>}
+        </section>
+
+        {analysis?.code && <section><h2>Recommended remediation</h2><pre>{analysis.code}</pre></section>}
+        <footer>Generated by DevSec Guard · This passive report is not a penetration test.</footer>
+      </article>
+    </>
   );
 }

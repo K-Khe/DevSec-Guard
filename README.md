@@ -24,7 +24,7 @@ DevSec Guard is a Next.js web app that runs a quick, non-intrusive security chec
 - **Bounded I/O:** every outbound request has a timeout, uses `cache: no-store`, and reads only a limited number of bytes from the response.
 - **Rate limiting:** an Upstash Redis atomic sliding-window limiter (`UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`) applies per client IP across all instances, with an automatic in-memory fallback for local development. `/api/analyze` also has a global cap, so the AI key is protected even if an attacker rotates IPs.
 - **Secret-free audit logging:** `lib/audit.ts` emits structured JSON events (`scan.completed`, `scan.blocked`, `analyze.completed`, `rate_limit.exceeded`, `policy.denied`) with hashed client identifiers (`RATE_LIMIT_KEY_SALT`) and automatic redaction of API keys, tokens, credentials, and sensitive query parameters.
-- **Authorization & usage policy:** `lib/policy.ts` enforces explicit user permission attestation (`authorized: true`), blocks restricted domains (`.gov`, `.mil`, plus `SCAN_BLOCKED_HOSTS`), supports enterprise domain scoping (`SCAN_ALLOWED_HOSTS`), and supports optional constant-time API token authentication (`SCANNER_ACCESS_TOKEN`).
+- **Public passive-scan policy:** `lib/policy.ts` blocks private/internal addresses and restricted domains (`.gov`, `.mil`, plus `SCAN_BLOCKED_HOSTS`), supports enterprise domain scoping (`SCAN_ALLOWED_HOSTS`), and supports optional constant-time API token authentication (`SCANNER_ACCESS_TOKEN`). Set `REQUIRE_SCAN_ATTESTATION=true` only when an internal deployment needs caller attestation.
 - **Prompt-injection hardening:** the scan payload is rebuilt field by field. Strings are flattened, control characters and backticks/angle brackets are stripped, and lengths are capped. The data goes inside a `<scan_data>` block that the system prompt marks as untrusted.
 - **Secret hygiene:** the Gemini key is sent in the `x-goog-api-key` header (never in the URL). Errors from the AI provider are logged on the server, and the client only sees a generic message.
 - **The app's own headers:** CSP, `X-Frame-Options: DENY`, HSTS, `nosniff`, `Referrer-Policy` and `Permissions-Policy` are set in `next.config.mjs`.
@@ -123,7 +123,7 @@ RATE_LIMIT_ANALYZE_GLOBAL_PER_MIN=30  # all clients combined, /api/analyze
 | `RATE_LIMIT_KEY_SALT` | Production | none | Random secret used to hash client identities before writing Redis keys and audit logs. |
 | `RATE_LIMIT_NAMESPACE` | No | `devsec-guard` | Prefix for the app's Redis keys. |
 | `AUDIT_LOG_ENABLED` | No | `true` | Set to `false` to disable structured JSON audit logging. |
-| `REQUIRE_SCAN_ATTESTATION` | No | `true` | Requires `"authorized": true` in `/api/scan` requests confirming domain ownership/permission. |
+| `REQUIRE_SCAN_ATTESTATION` | No | `false` | Set to `true` only to require `"authorized": true` in `/api/scan` requests for a restricted/internal deployment. |
 | `SCANNER_ACCESS_TOKEN` | No | none | Optional shared secret required via `x-scanner-token` or `Authorization: Bearer <token>`. |
 | `SCAN_ALLOWED_HOSTS` | No | none | Optional comma-separated allowlist (e.g. `example.com,*.mycompany.com`). When set, all other hosts are rejected. |
 | `SCAN_BLOCKED_HOSTS` | No | `.gov,.mil` | Additional comma-separated hostnames or suffixes to block. |

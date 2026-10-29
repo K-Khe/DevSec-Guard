@@ -85,7 +85,7 @@ export default function RemediationCard({ scan, analysis, loading, error, onRetr
   const stack = scan.detectedStack ?? [];
 
   return (
-    <Card title="AI Remediation" icon={<Sparkles className="h-5 w-5" />} accent="purple" className="md:col-span-3">
+    <Card accent="purple" className="md:col-span-3">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3 text-xs text-slate-400">
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1.5 font-mono text-slate-400">
@@ -189,7 +189,9 @@ export default function RemediationCard({ scan, analysis, loading, error, onRetr
               </div>
             )}
           </div>
-          <CodeBlock code={analysis.code} language={analysis.language} />
+          <div className="self-start lg:sticky lg:top-24">
+            <CodeBlock code={analysis.code} language={analysis.language} />
+          </div>
         </div>
       )}
     </Card>

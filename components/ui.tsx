@@ -23,8 +23,8 @@ export function Card({
   className = "",
   children,
 }: {
-  title: string;
-  icon: ReactNode;
+  title?: string;
+  icon?: ReactNode;
   accent: Accent;
   className?: string;
   children: ReactNode;
@@ -32,10 +32,12 @@ export function Card({
   const a = ACCENTS[accent];
   return (
     <section className={`rounded-xl border bg-ink-900/80 p-5 ${a.border} ${className}`}>
-      <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-white">
-        <span className={a.icon}>{icon}</span>
-        {title}
-      </h2>
+      {title && (
+        <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-white">
+          {icon && <span className={a.icon}>{icon}</span>}
+          {title}
+        </h2>
+      )}
       {children}
     </section>
   );

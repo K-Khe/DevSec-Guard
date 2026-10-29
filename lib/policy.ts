@@ -54,12 +54,12 @@ export function assertRequestAuthorized(req: Request): void {
 
 /**
  * Enforces usage policy:
- * 1. Explicit user attestation (`authorized: true`) when `REQUIRE_SCAN_ATTESTATION` is not `"false"`.
+ * 1. Optional user attestation (`authorized: true`) when `REQUIRE_SCAN_ATTESTATION` is explicitly `"true"`.
  * 2. Blocked host suffixes (`SCAN_BLOCKED_HOSTS` + `.gov` / `.mil` default).
  * 3. Optional allowed host scope (`SCAN_ALLOWED_HOSTS`) for restricted production deployments.
  */
 export function assertTargetPolicy(url: URL, authorizedAttestation?: unknown): void {
-  const requireAttestation = process.env.REQUIRE_SCAN_ATTESTATION?.toLowerCase() !== "false";
+  const requireAttestation = process.env.REQUIRE_SCAN_ATTESTATION?.toLowerCase() === "true";
   if (requireAttestation && authorizedAttestation !== true) {
     throw new ScanError(
       "Please confirm that you own this site or have explicit permission to scan it.",

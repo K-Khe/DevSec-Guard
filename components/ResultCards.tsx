@@ -103,11 +103,13 @@ function InfoButton({
   );
 }
 
-export function ScraperDefenseCard({ data }: { data: ScanResult["robots"] }) {
+export function ScraperDefenseCard({ data, mortal = false }: { data: ScanResult["robots"]; mortal?: boolean }) {
   return (
-    <Card title="AI Crawler Policy" icon={<Bot className="h-5 w-5" />} accent="purple">
+    <Card title="Phantom Crawlers · AI Crawler Policy" icon={<Bot className="h-5 w-5" />} accent="purple" className="ward-result-card">
       <p className="mb-4 text-sm text-slate-400">
-        {data.found
+        {mortal
+          ? "เหมือนป้ายหน้าบ้านที่บอกบอตอัตโนมัติว่าพื้นที่ใดไม่ควรเข้ามาเก็บข้อมูล"
+          : data.found
           ? "robots.txt found. Optional content-licensing policy (does not affect security score)."
           : `No robots.txt (HTTP ${data.status ?? "error"}). AI crawlers are allowed by default (informational).`}
       </p>
@@ -129,16 +131,20 @@ const HEADER_UI: Record<HeaderState, { tone: Tone; label: string }> = {
   missing: { tone: "bad", label: "Missing" },
 };
 
-export function SecurityHeadersCard({ data }: { data: ScanResult["headers"] }) {
+export function SecurityHeadersCard({ data, mortal = false }: { data: ScanResult["headers"]; mortal?: boolean }) {
   const [activeDict, setActiveDict] = useState<SecurityDictionaryEntry | null>(null);
   const exposures = data.exposures ?? [];
   const isolation = data.isolation ?? [];
   const raw = data.raw ?? [];
 
   return (
-    <Card title="Security Headers" icon={<ShieldHalf className="h-5 w-5" />} accent="cyan">
+    <Card title="Protective Wards · Security Headers" icon={<ShieldHalf className="h-5 w-5" />} accent="cyan" className="ward-result-card">
       <p className="mb-4 text-sm text-slate-400">
-        Response headers from the page (HTTP {data.status}). กดไอคอน <Info className="inline h-3.5 w-3.5 text-neon-cyan" /> เพื่อดูคำอธิบายแบบเข้าใจง่าย
+        {mortal
+          ? `เหมือนตรวจกลอน ประตู และกฎของบ้านจากภายนอก (HTTP ${data.status}) — กดไอคอน `
+          : `Response headers from the page (HTTP ${data.status}). กดไอคอน `}
+        <Info className="inline h-3.5 w-3.5 text-neon-cyan" />
+        {mortal ? " เพื่อดูคำอธิบายแบบภาษาคนทั่วไป" : " เพื่อดูคำอธิบายแบบเข้าใจง่าย"}
       </p>
       <ul className="space-y-2">
         {data.items.map((h) => {
@@ -147,7 +153,7 @@ export function SecurityHeadersCard({ data }: { data: ScanResult["headers"] }) {
             <li key={h.key} className="rounded-lg bg-ink-800 px-3 py-2">
               <div className="flex items-center justify-between gap-3">
                 <span className="inline-flex items-center gap-1.5 font-mono text-sm">
-                  {h.label}
+                  {mortal ? `${h.label} · ${h.state === "strong" ? "ล็อกใช้งาน" : h.state === "weak" ? "ล็อกยังไม่แน่น" : "ยังไม่มีล็อก"}` : h.label}
                   <InfoButton lookupKey={h.key} onSelect={setActiveDict} />
                 </span>
                 <Pill tone={ui.tone}>{ui.label}</Pill>
@@ -186,44 +192,50 @@ export function SecurityHeadersCard({ data }: { data: ScanResult["headers"] }) {
         </div>
       )}
 
-      {(isolation.length > 0 || raw.length > 0) && (
+      {mortal && (
+        <p className="mt-4 rounded-lg border border-neon-cyan/20 bg-neon-cyan/5 px-3 py-2 text-xs leading-relaxed text-slate-400">
+          อยากดูชื่อและค่าทางเทคนิคจริง ๆ ของเว็บนี้? สลับเป็น <strong className="text-neon-cyan">Wizards</strong> เพื่อเปิด Raw Response Headers.
+        </p>
+      )}
+
+      {!mortal && raw.length > 0 && (
         <details className="group mt-4 rounded-lg border border-white/10 bg-ink-950/60 px-3 py-2 text-xs">
           <summary className="flex cursor-pointer list-none items-center justify-between font-mono text-slate-400 hover:text-neon-cyan">
-            <span>Upcoming (COOP/COEP/CORP) &amp; Raw Headers ({raw.length})</span>
+            <span>Raw Response Headers ({raw.length})</span>
             <ChevronDown className="h-3.5 w-3.5 transition group-open:rotate-180" />
           </summary>
+          <p className="mt-2 border-t border-white/10 pt-2 text-[11px] leading-relaxed text-slate-500">
+            Headers received from the final response after redirects. Set-Cookie values are redacted.
+          </p>
+          <dl className="mt-2 max-h-52 space-y-1 overflow-y-auto pr-1 font-mono text-[11px]">
+            {raw.map((entry, idx) => (
+              <div key={`${entry.name}-${idx}`} className="grid grid-cols-[120px_1fr] gap-2 border-b border-white/5 pb-1">
+                <dt className="truncate text-neon-cyan" title={entry.name}>
+                  {entry.name}
+                </dt>
+                <dd className="break-all text-slate-400">{entry.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </details>
+      )}
 
-          {isolation.length > 0 && (
-            <div className="mt-3 space-y-1.5 border-t border-white/10 pt-2.5">
-              <p className="font-mono text-[11px] uppercase tracking-wider text-slate-500">
-                Cross-Origin Isolation (Upcoming)
-              </p>
-              {isolation.map((iso) => (
-                <div key={iso.key} className="flex items-center justify-between gap-2 py-0.5">
-                  <span className="truncate font-mono text-slate-300">{iso.label}</span>
-                  <Pill tone={iso.present ? (iso.reportOnly ? "warn" : "ok") : "muted"}>
-                    {iso.present ? iso.value ?? "Present" : "Not set"}
-                  </Pill>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {raw.length > 0 && (
-            <div className="mt-3 border-t border-white/10 pt-2.5">
-              <p className="mb-1.5 font-mono text-[11px] uppercase tracking-wider text-slate-500">Raw Headers</p>
-              <dl className="max-h-48 space-y-1 overflow-y-auto pr-1 font-mono text-[11px]">
-                {raw.map((entry, idx) => (
-                  <div key={`${entry.name}-${idx}`} className="grid grid-cols-[120px_1fr] gap-2 border-b border-white/5 pb-1">
-                    <dt className="truncate text-neon-cyan" title={entry.name}>
-                      {entry.name}
-                    </dt>
-                    <dd className="break-all text-slate-400">{entry.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          )}
+      {!mortal && isolation.length > 0 && (
+        <details className="group mt-3 rounded-lg border border-white/10 bg-ink-950/60 px-3 py-2 text-xs">
+          <summary className="flex cursor-pointer list-none items-center justify-between font-mono text-slate-400 hover:text-neon-cyan">
+            <span>Cross-Origin Isolation</span>
+            <ChevronDown className="h-3.5 w-3.5 transition group-open:rotate-180" />
+          </summary>
+          <div className="mt-2 space-y-1.5 border-t border-white/10 pt-2">
+            {isolation.map((iso) => (
+              <div key={iso.key} className="flex items-center justify-between gap-2 py-0.5">
+                <span className="truncate font-mono text-slate-300">{iso.label}</span>
+                <Pill tone={iso.present ? (iso.reportOnly ? "warn" : "ok") : "muted"}>
+                  {iso.present ? iso.value ?? "Present" : "Not set"}
+                </Pill>
+              </div>
+            ))}
+          </div>
         </details>
       )}
     </Card>
@@ -291,12 +303,14 @@ const LEAK_UI: Record<LeakState, { tone: Tone; label: string }> = {
   unreachable: { tone: "muted", label: "No response" },
 };
 
-export function DevLeaksCard({ data }: { data: ScanResult["leaks"] }) {
+export function DevLeaksCard({ data, mortal = false }: { data: ScanResult["leaks"]; mortal?: boolean }) {
   const [activeDict, setActiveDict] = useState<SecurityDictionaryEntry | null>(null);
 
   return (
-    <Card title="Dev Leaks" icon={<FileWarning className="h-5 w-5" />} accent="green">
-      <p className="mb-4 text-sm text-slate-400">Sensitive paths that should never return a file.</p>
+    <Card title="Crypt Leaks · Dev Leaks" icon={<FileWarning className="h-5 w-5" />} accent="green" className="ward-result-card">
+      <p className="mb-4 text-sm text-slate-400">
+        {mortal ? "เหมือนตรวจว่ามีกุญแจสำรองหรือเอกสารลับถูกวางทิ้งไว้หน้าบ้านหรือไม่" : "Sensitive paths that should never return a file."}
+      </p>
       <ul className="space-y-2">
         {data.map((l) => (
           <li key={l.path} className="rounded-lg bg-ink-800 px-3 py-2">

@@ -66,13 +66,21 @@ export default async function VulnerabilitiesPage() {
     <main className="min-h-screen bg-[radial-gradient(ellipse_at_top,rgba(179,102,255,0.16),transparent_55%)]">
       <div className="mx-auto max-w-5xl px-4 pb-24 pt-12 sm:px-6">
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-lg border border-neon-cyan/40 bg-ink-900 px-4 py-2 font-mono text-xs font-semibold text-neon-cyan transition hover:bg-neon-cyan/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            กลับไปหน้าสแกนหลัก (Scanner)
-          </Link>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 rounded-lg border border-neon-cyan/40 bg-ink-900 px-4 py-2 font-mono text-xs font-semibold text-neon-cyan transition hover:bg-neon-cyan/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              กลับไปหน้าสแกนหลัก
+            </Link>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-ink-900 px-3 py-2 font-mono text-xs text-slate-400 transition hover:border-white/30 hover:text-white"
+            >
+              หน้าแรก (`/`)
+            </Link>
+          </div>
 
           <div className="flex flex-wrap items-center gap-2 font-mono text-xs text-slate-400">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-neon-purple/30 bg-neon-purple/10 px-3 py-1 text-neon-purple">

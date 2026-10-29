@@ -1,20 +1,19 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const sans = Space_Grotesk({ subsets: ["latin"], variable: "--font-sans" });
-const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
+const sans = localFont({ src: "./fonts/GeistVF.woff", variable: "--font-sans" });
+const mono = localFont({ src: "./fonts/GeistMonoVF.woff", variable: "--font-mono" });
 
 export const metadata: Metadata = {
-  title: "DevSec Guard: AI Scraper & Vulnerability Auditor",
-  description:
-    "Scan any site for AI crawler exposure, missing security headers and leaked dev files, then get a security grade and fix.",
+  title: "DevSec Guard — Halloween Edition",
+  description: "Security posture scanning for public websites, wrapped in a Halloween UI.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${sans.variable} ${mono.variable}`}>
-      <body className="min-h-screen bg-ink-950 font-sans text-slate-200 antialiased">{children}</body>
+      <body className="min-h-screen antialiased">{children}</body>
     </html>
   );
 }
