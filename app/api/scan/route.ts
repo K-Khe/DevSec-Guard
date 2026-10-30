@@ -3,6 +3,7 @@ import { ScanError, normalizeUrl, readText, safeFetch } from "@/lib/validate";
 import type {
   BotRule,
   CookieCheck,
+  CrawledPage,
   CspCheckItem,
   HeaderCheck,
   HeaderExposure,
@@ -15,6 +16,8 @@ import type {
 import { RATE_LIMITS, enforceRateLimit } from "@/lib/rateLimit";
 import { auditLog } from "@/lib/audit";
 import { assertRequestAuthorized, assertTargetPolicy } from "@/lib/policy";
+import { persistScanRecord, ScanRecordStoreError } from "@/lib/scanRecord";
+import { verifyRedirectChain } from "@/lib/redirectVerifier";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -686,6 +689,135 @@ function inspectHtml(html: string, isHttps: boolean, originHost: string, headers
   return findings;
 }
 
+const MAX_CRAWL_SUBPAGES = 5;
+const SKIP_EXT_RE = /\.(?:png|jpe?g|gif|webp|svg|ico|css|m?js|map|pdf|zip|gz|tar|xml|json|woff2?|ttf|eot|mp4|webm|mp3|wav)(?:$|[?#])/i;
+const PRIORITY_PATH_RE = /\/(?:login|signin|sign-in|auth|register|signup|admin|account|profile|contact|dashboard|portal|user|checkout)\b/i;
+
+/** Extracts up to MAX_CRAWL_SUBPAGES unique same-origin HTML links from page source, prioritizing high-value routes. */
+function extractSameOriginSubpages(html: string, baseUrl: URL): URL[] {
+  if (!html) return [];
+  const seen = new Set<string>();
+  const homeKey = `${baseUrl.pathname.replace(/\/+$/, "") || "/"}${baseUrl.search}`;
+  seen.add(homeKey);
+  seen.add("/robots.txt");
+  seen.add("/.env");
+  seen.add("/.git/head");
+
+  const candidates: URL[] = [];
+  const hrefMatches = html.matchAll(/<a\b[^>]*\bhref\s*=\s*["']([^"'#]+)["']/gi);
+
+  for (const match of hrefMatches) {
+    const rawHref = match[1]?.trim();
+    if (!rawHref || /^(?:mailto:|tel:|javascript:|data:)/i.test(rawHref)) continue;
+    try {
+      const resolved = new URL(rawHref, baseUrl);
+      if (resolved.origin !== baseUrl.origin) continue;
+      if (SKIP_EXT_RE.test(resolved.pathname)) continue;
+      resolved.hash = "";
+      const normPath = `${resolved.pathname.replace(/\/+$/, "") || "/"}${resolved.search}`;
+      const lowerKey = normPath.toLowerCase();
+      if (seen.has(lowerKey)) continue;
+      seen.add(lowerKey);
+      candidates.push(resolved);
+      if (candidates.length >= 25) break;
+    } catch {
+      /* ignore malformed href */
+    }
+  }
+
+  candidates.sort((a, b) => {
+    const aPri = PRIORITY_PATH_RE.test(a.pathname) ? 0 : 1;
+    const bPri = PRIORITY_PATH_RE.test(b.pathname) ? 0 : 1;
+    if (aPri !== bPri) return aPri - bPri;
+    return a.pathname.length - b.pathname.length;
+  });
+
+  return candidates.slice(0, MAX_CRAWL_SUBPAGES);
+}
+
+async function crawlSameOriginSubpages(
+  subpageUrls: URL[],
+  originHost: string,
+): Promise<{
+  pages: CrawledPage[];
+  extraCookies: CookieCheck[];
+  extraFindings: HtmlFinding[];
+}> {
+  if (subpageUrls.length === 0) {
+    return { pages: [], extraCookies: [], extraFindings: [] };
+  }
+
+  const results = await Promise.all(
+    subpageUrls.map(async (target): Promise<{
+      page: CrawledPage;
+      cookies: CookieCheck[];
+      findings: HtmlFinding[];
+    }> => {
+      const pathLabel = `${target.pathname}${target.search}` || "/";
+      try {
+        const res = await safeFetch(target.toString(), { method: "GET" }, 3000, 2);
+        const ct = (res.headers.get("content-type") ?? "").toLowerCase();
+        const isSubHttps = target.protocol === "https:";
+        const subCookies = evaluateCookies(res.headers, isSubHttps);
+
+        if (!ct.includes("text/html")) {
+          await res.body?.cancel();
+          return {
+            page: {
+              path: pathLabel,
+              url: target.toString(),
+              status: res.status,
+              findingsCount: 0,
+              cookiesCount: subCookies.length,
+              findings: [],
+            },
+            cookies: subCookies,
+            findings: [],
+          };
+        }
+
+        const subHtml = await readText(res, 150_000);
+        const subFindings = inspectHtml(subHtml, isSubHttps, originHost, res.headers).map((f) => ({
+          ...f,
+          title: `${f.title} (${pathLabel})`,
+        }));
+
+        return {
+          page: {
+            path: pathLabel,
+            url: target.toString(),
+            status: res.status,
+            findingsCount: subFindings.length,
+            cookiesCount: subCookies.length,
+            findings: subFindings.map((f) => f.title),
+          },
+          cookies: subCookies,
+          findings: subFindings,
+        };
+      } catch {
+        return {
+          page: {
+            path: pathLabel,
+            url: target.toString(),
+            status: null,
+            findingsCount: 0,
+            cookiesCount: 0,
+            findings: [],
+          },
+          cookies: [],
+          findings: [],
+        };
+      }
+    }),
+  );
+
+  return {
+    pages: results.map((r) => r.page),
+    extraCookies: results.flatMap((r) => r.cookies),
+    extraFindings: results.flatMap((r) => r.findings),
+  };
+}
+
 /**
  * International-standard (MDN Observatory / OWASP aligned) 0–100 score and letter grade.
  * - Security Headers: 90 pts total (CSP 25, HSTS 20, XFO 15, XCTO 12, RP 10, PP 8)
@@ -787,13 +919,15 @@ export async function POST(req: Request) {
     assertTargetPolicy(url, body?.authorized);
     const origin = url.origin;
 
-    const [mainRes, robots, leaks] = await Promise.all([
-      safeFetch(url.toString(), { method: "GET" }, 8000).catch(() => {
+    const [redirectResult, robots, leaks] = await Promise.all([
+      verifyRedirectChain(url).catch((error) => {
+        if (error instanceof ScanError) throw error;
         throw new ScanError("Couldn't reach that site. It may be offline or blocking scanners.", 502);
       }),
       checkRobots(origin),
       Promise.all(LEAK_PATHS.map((t) => checkLeak(origin, t))),
     ]);
+    const mainRes = redirectResult.response;
     const isHttps = mainRes.finalUrl.protocol === "https:";
     const contentType = mainRes.headers.get("content-type") ?? "";
     const html = contentType.includes("text/html") ? await readText(mainRes, 250_000) : "";
@@ -803,6 +937,37 @@ export async function POST(req: Request) {
     const raw = collectRawHeaders(mainRes.headers);
     const cookies = evaluateCookies(mainRes.headers, isHttps);
     const htmlFindings = inspectHtml(html, isHttps, mainRes.finalUrl.hostname, mainRes.headers);
+    const homeFindingsTitles = htmlFindings.map((f) => f.title);
+    const homeCookiesCount = cookies.length;
+
+    // Bounded same-origin subpage crawl (up to 5 subpages discovered on the entry page)
+    const subpageTargets = extractSameOriginSubpages(html, mainRes.finalUrl);
+    const crawled = await crawlSameOriginSubpages(subpageTargets, mainRes.finalUrl.hostname);
+
+    for (const extraCookie of crawled.extraCookies) {
+      if (!cookies.some((c) => c.name === extraCookie.name)) {
+        cookies.push(extraCookie);
+      }
+    }
+    for (const extraFinding of crawled.extraFindings) {
+      if (!htmlFindings.some((f) => f.key === extraFinding.key)) {
+        htmlFindings.push(extraFinding);
+      }
+    }
+
+    const entryPath = `${mainRes.finalUrl.pathname}${mainRes.finalUrl.search}` || "/";
+    const crawledPages: CrawledPage[] = [
+      {
+        path: entryPath,
+        url: mainRes.finalUrl.toString(),
+        status: mainRes.status,
+        findingsCount: homeFindingsTitles.length,
+        cookiesCount: homeCookiesCount,
+        findings: homeFindingsTitles,
+      },
+      ...crawled.pages,
+    ];
+
     const detectedStack = detectStack(mainRes.headers, html);
     const { score, grade, testsPassed, testsTotal } = computeScoreAndGrade(
       items,
@@ -825,7 +990,12 @@ export async function POST(req: Request) {
       cookies,
       htmlFindings,
       leaks,
+      redirects: redirectResult.evidence,
+      crawledPages,
     };
+
+    const capabilityToken = await persistScanRecord(result);
+    if (capabilityToken) result.capabilityToken = capabilityToken;
 
     auditLog({
       action: "scan.completed",
@@ -845,6 +1015,17 @@ export async function POST(req: Request) {
 
     return NextResponse.json(result);
   } catch (e) {
+    if (e instanceof ScanRecordStoreError) {
+      auditLog({
+        action: "scan.failed",
+        req,
+        targetUrl: rawTarget || undefined,
+        status: 503,
+        durationMs: Date.now() - startedAt,
+        meta: { reason: e.name },
+      });
+      return NextResponse.json({ error: e.message }, { status: 503 });
+    }
     if (e instanceof ScanError) {
       auditLog({
         action: e.status === 401 || e.status === 403 ? "policy.denied" : "scan.blocked",

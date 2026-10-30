@@ -91,17 +91,37 @@ export function buildLocalAnalysis(scan: ScanResult): AnalysisResult {
     );
   }
 
+  const htmlFindingThMap: Record<string, string> = {
+    "mixed-content":
+      "พบการโหลดทรัพยากรผ่าน HTTP บนหน้า HTTPS (Mixed Content) ควรเปลี่ยนลิงก์รูปภาพและสคริปต์ทั้งหมดให้เป็น https://",
+    "insecure-form":
+      "พบแบบฟอร์ม (<form>) ส่งข้อมูลผ่าน http:// ที่ไม่ได้เข้ารหัส เสี่ยงต่อการถูกดักฟังข้อมูลระหว่างทาง",
+    "source-map":
+      "พบไฟล์ Source Map (.map) เปิดเผยในหน้าเว็บ แนะนำให้ปิดการสร้าง Source Map บนระบบ Production",
+    "possible-secret":
+      "พบรูปแบบข้อความคล้ายคีย์ลับ (API Key / Secret / Token) ในซอร์สโค้ดหน้าเว็บ ควรตรวจสอบและย้ายไปเก็บในตัวแปรสภาพแวดล้อมฝั่งเซิร์ฟเวอร์",
+    "unsafe-blank-link":
+      "พบลิงก์เปิดแท็บใหม่ (target=\"_blank\") ที่ไม่ได้ระบุ rel=\"noopener\" ควรเพิ่ม rel=\"noopener noreferrer\"",
+    "missing-sri":
+      "พบสคริปต์ภายนอก (CDN) ที่ไม่ได้ระบุค่า Subresource Integrity (integrity=\"sha384-...\")",
+    "wordpress-surface":
+      "ตรวจพบร่องรอยระบบ WordPress ควรอัปเดตปลั๊กอินให้เป็นปัจจุบันและบล็อก /xmlrpc.php หากไม่ได้ใช้งาน",
+    "php-version-exposure":
+      "ตรวจพบการเปิดเผยเลขเวอร์ชัน PHP ควรตั้งค่า expose_php = Off ใน php.ini เพื่อซ่อนเลขเวอร์ชัน",
+  };
+
   for (const hf of scan.htmlFindings) {
-    if (hf.key === "php-version-exposure" || hf.key === "wordpress-surface") {
-      findings.push(`${hf.title} — ${hf.note}`);
+    const mapped = htmlFindingThMap[hf.key];
+    if (mapped) {
+      findings.push(mapped);
     } else if (hf.severity === "high" || hf.severity === "medium") {
-      findings.push(`ตรวจพบความเสี่ยงใน HTML (${hf.title}): ${hf.note}`);
+      findings.push(`ตรวจพบความเสี่ยงในโครงสร้าง HTML (${hf.title})`);
     }
   }
 
   if (weakCookies.length > 0) {
     findings.push(
-      `พบคุกกี้ ${weakCookies.length} รายการ (${weakCookies.map((c) => c.name).slice(0, 3).join(", ")}) ขาดแฟล็ก Secure, HttpOnly หรือ SameSite`,
+      `พบคุกกี้ ${weakCookies.length} รายการ ที่ยังไม่ได้ตั้งค่า Secure, HttpOnly หรือ SameSite ให้ครบถ้วน`,
     );
   }
 

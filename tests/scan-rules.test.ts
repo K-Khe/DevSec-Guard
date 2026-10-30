@@ -5,6 +5,8 @@ const { normalizeUrl, safeFetch } = vi.hoisted(() => ({
   safeFetch: vi.fn(),
 }));
 
+const { verifyRedirectChain } = vi.hoisted(() => ({ verifyRedirectChain: vi.fn() }));
+
 vi.mock("@/lib/validate", () => ({
   ScanError: class ScanError extends Error {
     status: number;
@@ -18,6 +20,8 @@ vi.mock("@/lib/validate", () => ({
   readText: async (response: Response) => response.text(),
 }));
 
+vi.mock("@/lib/redirectVerifier", () => ({ verifyRedirectChain }));
+
 import { POST } from "../app/api/scan/route";
 
 function scannedResponse(url: string, headers: HeadersInit = {}, body = ""): Response & { finalUrl: URL } {
@@ -26,6 +30,10 @@ function scannedResponse(url: string, headers: HeadersInit = {}, body = ""): Res
 
 beforeEach(() => {
   normalizeUrl.mockResolvedValue(new URL("https://example.test/"));
+  verifyRedirectChain.mockImplementation(async () => ({
+    response: await safeFetch("https://example.test/"),
+    evidence: { status: "no_redirect", secure: true, hops: [{ hopIndex: 1, statusCode: 200, protocol: "https", hostChangedFromPrevious: false }] },
+  }));
   safeFetch.mockImplementation(async (url: string) => {
     if (url.endsWith("/robots.txt")) return scannedResponse(url, { "content-type": "text/plain" }, "User-agent: *\nDisallow: /");
     if (url.endsWith("/.env")) return scannedResponse(url, {}, "DB_PASSWORD=not-a-real-secret");

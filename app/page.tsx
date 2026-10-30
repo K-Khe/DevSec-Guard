@@ -14,14 +14,47 @@ import {
   SecurityHeadersCard,
 } from "@/components/ResultCards";
 import ReportActions from "@/components/ReportActions";
+import CisaSceneSlider from "@/components/CisaSceneSlider";
 import type { AnalysisMode, AnalysisResult, ScanResult } from "@/lib/types";
 
 type Phase = "idle" | "scanning" | "analyzing" | "done";
+type Locale = "th" | "en";
 
 const headerWeights = {
   csp: { strong: 25, weak: 14 }, hsts: { strong: 20, weak: 10 }, xfo: { strong: 15, weak: 8 },
   xcto: { strong: 12, weak: 6 }, rp: { strong: 10, weak: 5 }, pp: { strong: 8, weak: 4 },
 } as const;
+
+function formatRedirectSummary(redirects: NonNullable<ScanResult["redirects"]>, th: boolean): string {
+  const redirectCount = Math.max(0, redirects.hops.length - 1);
+  if (!th) {
+    if (redirects.status === "no_redirect") {
+      return `Direct connection (${redirects.secure ? "HTTPS secure" : "HTTP unencrypted"})`;
+    }
+    return `${redirects.status.replaceAll("_", " ")} · ${redirectCount} redirect${redirectCount === 1 ? "" : "s"} · ${redirects.secure ? "HTTPS secure throughout" : "needs HTTPS review"}`;
+  }
+
+  switch (redirects.status) {
+    case "no_redirect":
+      return redirects.secure
+        ? "เชื่อมต่อตรงผ่าน HTTPS อย่างปลอดภัย (ไม่มีการเด้งเปลี่ยนหน้า)"
+        : "เชื่อมต่อตรงแต่ยังเป็น HTTP ที่ไม่ได้เข้ารหัส (ควรบังคับใช้ HTTPS)";
+    case "http_upgraded":
+      return `ปลอดภัย — ระบบบังคับเปลี่ยนจาก HTTP เป็น HTTPS อัตโนมัติ (เปลี่ยนหน้า ${redirectCount || 1} ครั้ง)`;
+    case "clean_secure":
+      return `ปลอดภัย — เปลี่ยนหน้าภายใต้การเข้ารหัส HTTPS ตลอดเส้นทาง (${redirectCount || 1} ครั้ง)`;
+    case "insecure_start":
+      return "ควรแก้ไข — หน้าเว็บยังเปิดผ่าน HTTP ปกติโดยไม่บังคับเปลี่ยนเป็น HTTPS";
+    case "invalid_first_upgrade":
+      return "ควรตรวจสอบ — การเปลี่ยนหน้าจาก HTTP ไปยังโดเมนอื่นก่อนเข้ารหัส HTTPS";
+    case "downgrade_detected":
+      return "อันตราย — พบการเปลี่ยนหน้าลดระดับจาก HTTPS กลับไปเป็น HTTP ที่ไม่ปลอดภัย";
+    case "max_hops_exceeded":
+      return "ควรตรวจสอบ — มีการเด้งเปลี่ยนหน้าต่อกันหลายทอดเกินไป (เกิน 5 ครั้ง)";
+    default:
+      return "ควรตรวจสอบ — รูปแบบการเปลี่ยนหน้าเว็บไม่สมบูรณ์";
+  }
+}
 
 function getHeaderPosture(scan: ScanResult | null) {
   if (!scan) return null;
@@ -65,7 +98,11 @@ function Flow({ lava = false, cn = "" }: { lava?: boolean; cn?: string }) {
     let f = 0;
     const draw = (t: number) => {
       const b = c.getBoundingClientRect(),
-        r = Math.min(devicePixelRatio, 1.5);
+        r = Math.min(devicePixelRatio || 1, 1.5);
+      if (b.width <= 0 || b.height <= 0 || !Number.isFinite(b.width) || !Number.isFinite(b.height)) {
+        f = requestAnimationFrame(draw);
+        return;
+      }
       if (c.width !== Math.ceil(b.width * r) || c.height !== Math.ceil(b.height * r)) {
         c.width = Math.ceil(b.width * r);
         c.height = Math.ceil(b.height * r);
@@ -106,7 +143,11 @@ function Motes() {
     const p = Array.from({ length: 70 }, (_, i) => [(i * 47) % 100, (i * 29) % 100, 0.5 + (i % 3)]);
     const draw = (t: number) => {
       const b = c.getBoundingClientRect(),
-        r = Math.min(devicePixelRatio, 1.5);
+        r = Math.min(devicePixelRatio || 1, 1.5);
+      if (b.width <= 0 || b.height <= 0 || !Number.isFinite(b.width) || !Number.isFinite(b.height)) {
+        f = requestAnimationFrame(draw);
+        return;
+      }
       if (c.width !== Math.ceil(b.width * r) || c.height !== Math.ceil(b.height * r)) {
         c.width = Math.ceil(b.width * r);
         c.height = Math.ceil(b.height * r);
@@ -184,7 +225,7 @@ function Seam({ src, fall }: { src: string; fall?: string }) {
 export default function Home() {
   const lamp = useRef<HTMLDivElement>(null);
   const [url, setUrl] = useState("");
-  const [mortalMode, setMortalMode] = useState(true);
+  const [locale, setLocale] = useState<Locale>("th");
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [mode, setMode] = useState<AnalysisMode>("ai-anonymized");
   const [phase, setPhase] = useState<Phase>("idle");
@@ -195,6 +236,7 @@ export default function Home() {
 
   const busy = phase === "scanning" || phase === "analyzing";
   const headerPosture = useMemo(() => getHeaderPosture(scan), [scan]);
+  const th = locale === "th";
 
   useEffect(() => {
     const fn = (e: PointerEvent) => lamp.current?.style.setProperty("--point", `${e.clientX}px ${e.clientY}px`);
@@ -225,7 +267,15 @@ export default function Home() {
     setAiError(null);
     setAnalysis(null);
     try {
-      setAnalysis(await post<AnalysisResult>("/api/analyze", { ...result, mode: nextMode }));
+      if (!result.capabilityToken) {
+        throw new Error("This scan ticket is unavailable. Run a new scan before requesting analysis.");
+      }
+      setAnalysis(
+        await post<AnalysisResult>("/api/analyze", {
+          capabilityToken: result.capabilityToken,
+          mode: nextMode,
+        }),
+      );
     } catch (e) {
       setAiError(e instanceof Error ? e.message : "Analysis failed.");
     } finally {
@@ -258,10 +308,20 @@ export default function Home() {
   return (
     <main className="hollowmere">
       <header className="nav">
-        <nav>
-          <a href="#scanner">Scanner</a>
-          <a href="#wards">Wards</a>
-          <a href="#grimoire">Grimoire</a>
+        <nav aria-label={th ? "ขั้นตอนดูผลตรวจ" : "Scan result steps"}>
+          <a href="#wards">
+            <span className="nav-step">1</span>
+            {th ? "ผลตรวจ 3 ด้าน" : "Summary"}
+          </a>
+          <a href="#grimoire">
+            <span className="nav-step">2</span>
+            {th ? "วิธีแก้ไข" : "Fix Guide"}
+          </a>
+          <button type="button" className="nav-report" onClick={() => setArchiveOpen(true)}>
+            <span className="nav-step">3</span>
+            {th ? "รายงานละเอียด" : "Full Report"}
+            {scan && <i className="nav-ready-dot" aria-hidden="true" />}
+          </button>
         </nav>
         <a className="mark" href="#top" aria-label="Hollowmere Top">
           <svg viewBox="0 0 26 24">
@@ -270,11 +330,26 @@ export default function Home() {
             <circle cx="14.4" cy="14.4" r="3" />
           </svg>
         </a>
-        <nav>
-          <button type="button" className="nav-report" onClick={() => setArchiveOpen(true)}>Report</button>
-          <Link href="/vulnerabilities">CISA Feed</Link>
-          <a className="tickets" href="#scanner">
-            Scan now
+        <nav aria-label={th ? "เครื่องมือและภาษา" : "Tools and language"}>
+          <a href="#night" className="nav-feed">
+            {th ? "ข่าวช่องโหว่ CISA" : "CISA Alerts"}
+          </a>
+          <span className="nav-lang" aria-label="Language">
+            <button type="button" onClick={() => setLocale("th")} aria-pressed={th}>ไทย</button>
+            <button type="button" onClick={() => setLocale("en")} aria-pressed={!th}>EN</button>
+          </span>
+          <a
+            className="tickets"
+            href="#top"
+            onClick={(e) => {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: "smooth" });
+              window.setTimeout(() => {
+                document.querySelector<HTMLInputElement>("#scanner input")?.focus({ preventScroll: true });
+              }, 350);
+            }}
+          >
+            {th ? "สแกนเว็บ" : "Scan URL"}
           </a>
         </nav>
       </header>
@@ -309,18 +384,41 @@ export default function Home() {
               onModeChange={changeMode}
               onSubmit={run}
               busy={busy}
-              label={phase === "scanning" ? "Scanning..." : phase === "analyzing" ? "Auditing..." : "Scan now"}
+              locale={locale}
+              label={phase === "scanning" ? (th ? "กำลังสแกน..." : "Scanning...") : phase === "analyzing" ? (th ? "กำลังสรุปผล..." : "Auditing...") : th ? "เริ่มสแกนเลย" : "Scan now"}
             />
+            {error && (
+              <p role="alert" className="hero-error">
+                {error}
+              </p>
+            )}
             <div className="hero-gate" aria-live="polite">
               <div>
-                <strong>{phase === "scanning" ? "Opening the Gate" : phase === "analyzing" ? "Reading the Grimoire" : phase === "done" ? "The Gate Is Open" : "The Scan Gate"}</strong>
-                <span>{phase === "scanning" ? "Reading public signals…" : phase === "analyzing" ? "Preparing a plain-language repair…" : phase === "done" ? "Results await below." : "Public, read-only HTTP security check."}</span>
-              </div>
-              <div className="hero-mode" aria-label="Analysis mode">
-                <button type="button" onClick={() => changeMode("ai-anonymized")} aria-pressed={mode === "ai-anonymized"}>AI Auditor</button>
-                <button type="button" onClick={() => changeMode("local")} aria-pressed={mode === "local"}>Local Engine</button>
+                <strong>
+                  {phase === "scanning"
+                    ? (th ? "⏳ กำลังตรวจความปลอดภัยหน้าเว็บ..." : "⏳ Scanning website headers & surface...")
+                    : phase === "analyzing"
+                    ? (th ? "⏳ กำลังสรุปวิธีแก้ไขให้เข้าใจง่าย..." : "⏳ Preparing plain-language fix guide...")
+                    : phase === "done" && scan
+                    ? (th ? `✅ สแกนเสร็จแล้ว · เกรด ${scan.grade} (${scan.score}/100)` : `✅ Scan complete · Grade ${scan.grade} (${scan.score}/100)`)
+                    : (th ? "พิมพ์ชื่อเว็บไซต์แล้วกดเริ่มสแกนได้เลย" : "Enter a website URL and click Scan")}
+                </strong>
+                <span>
+                  {th
+                    ? "ตรวจจากภายนอกแบบอ่านอย่างเดียว (ปลอดภัย ไม่กระทบเว็บ) · ซ่อนชื่อโดเมนอัตโนมัติเมื่อสรุปผล"
+                    : "Safe read-only external check · Automatically anonymizes domain during analysis"}
+                </span>
               </div>
             </div>
+            {scan && phase === "done" && (
+              <div className="hero-quick-steps">
+                <a href="#wards">{th ? "1. ดูผลตรวจ 3 ด้าน ↓" : "1. View 3 Checks ↓"}</a>
+                <a href="#grimoire">{th ? "2. ดูโค้ดวิธีแก้ไข ↓" : "2. View Fix Code ↓"}</a>
+                <button type="button" onClick={() => setArchiveOpen(true)}>
+                  {th ? "3. เปิดรายงานละเอียด (Cookies / CSP / พิมพ์ PDF)" : "3. Full Report & Export"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </Scene>
@@ -335,19 +433,35 @@ export default function Home() {
         <Sprite name="g4" x={30} y={22} w={2.6} />
         <div className="ward-deck">
           <header>
-            <span>SCAN RESULTS</span>
-            <h2>Protective Wards</h2>
-            <p>{scan ? `External findings for ${scan.url}` : "Your three defenses will appear here after the scan."}</p>
-            <div className="mb-3 flex flex-wrap items-center gap-2" aria-label="Explanation mode">
-              <span className="font-mono text-[11px] uppercase tracking-wider text-slate-400">View as</span>
-              <button type="button" onClick={() => setMortalMode(true)} aria-pressed={mortalMode} className={`rounded-md border px-2 py-1 font-mono text-[11px] transition ${mortalMode ? "border-neon-cyan/60 bg-neon-cyan/10 text-neon-cyan" : "border-white/10 text-slate-500 hover:text-slate-300"}`}>Mortals · ภาษาคนทั่วไป</button>
-              <button type="button" onClick={() => setMortalMode(false)} aria-pressed={!mortalMode} className={`rounded-md border px-2 py-1 font-mono text-[11px] transition ${!mortalMode ? "border-neon-purple/60 bg-neon-purple/10 text-neon-purple" : "border-white/10 text-slate-500 hover:text-slate-300"}`}>Wizards · Technical</button>
-              <span className="text-[11px] text-slate-500">{mortalMode ? "เริ่มจากภาพรวมแบบช่างตรวจบ้าน" : "ดู header และหลักฐานเชิงเทคนิค"}</span>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[#ffbe76]">
+                {th ? "ขั้นตอนที่ 1 · ผลตรวจหลัก 3 ด้าน" : "STEP 1 · 3 CORE SECURITY CHECKS"}
+              </span>
+              {scan && (
+                <a href="#grimoire" className="rounded-md border border-amber-300/40 bg-amber-400/10 px-2.5 py-1 font-mono text-[11px] text-amber-200 transition hover:bg-amber-400/20">
+                  {th ? "ไปขั้นตอนที่ 2: ดูวิธีแก้ไข ↓" : "Next: Step 2 Fix Guide ↓"}
+                </a>
+              )}
             </div>
-            {scan && headerPosture && <div className="result-metrics" aria-label="Scan score summary"><span><b>Header posture</b> {headerPosture.score}/100 · {headerPosture.strong}/{headerPosture.total} strong</span><span><b>DevSec posture</b> {scan.grade} · {scan.score}/100</span></div>}
+            <h2>{th ? "สรุปเกราะป้องกันเว็บไซต์" : "Protective Wards"}</h2>
+            <p>{scan ? (th ? `ผลตรวจจากภายนอกสำหรับ ${scan.url}` : `External findings for ${scan.url}`) : th ? "ใส่ชื่อเว็บด้านบนแล้วกดเริ่มสแกน ระบบจะสรุปผลตรวจทั้ง 3 ด้านให้ที่นี่" : "Enter a URL above and click Scan to view your three core checks here."}</p>
+            {scan && headerPosture && (
+              <div className="result-metrics" aria-label="Scan score summary">
+                <span><b>{th ? "คะแนน Header" : "Header score"}</b> {headerPosture.score}/100 · {headerPosture.strong}/{headerPosture.total} {th ? "รายการผ่านเกณฑ์" : "strong"}</span>
+                <span><b>{th ? "เกรดรวม" : "Overall grade"}</b> {scan.grade} · {scan.score}/100</span>
+                {scan.crawledPages && (
+                  <span><b>{th ? "ไต่ลิงก์ตรวจ" : "Crawled"}</b> {scan.crawledPages.length} {th ? "หน้า" : `page${scan.crawledPages.length === 1 ? "" : "s"}`}</span>
+                )}
+              </div>
+            )}
+            {scan?.redirects && (
+              <p className="mt-3 font-mono text-[11px] text-slate-300/80" aria-label="Redirect chain result">
+                <b className="text-neon-cyan">{th ? "การเชื่อมต่อลิงก์:" : "Connection:"}</b> · {formatRedirectSummary(scan.redirects, th)}
+              </p>
+            )}
           </header>
           <div className="ward-grid">
-            {scan ? <><ScraperDefenseCard data={scan.robots} mortal={mortalMode} /><SecurityHeadersCard data={scan.headers} mortal={mortalMode} /><DevLeaksCard data={scan.leaks} mortal={mortalMode} /></> : <><article><b>Phantom Crawlers</b><small>AI Scraper Defense</small><p>GPTBot · ClaudeBot · CCBot</p></article><article><b>Protective Wards</b><small>Security Headers</small><p>Content-Security-Policy · X-Frame-Options · Strict-Transport-Security</p></article><article><b>Crypt Leaks</b><small>Dev Leaks</small><p>/.env · /.git/HEAD</p></article></>}
+            {scan ? <><ScraperDefenseCard data={scan.robots} locale={locale} /><SecurityHeadersCard data={scan.headers} locale={locale} /><DevLeaksCard data={scan.leaks} locale={locale} /></> : <><article><b>{th ? "บอตเงา" : "Phantom Crawlers"}</b><small>{th ? "การป้องกัน AI Scraper" : "AI Scraper Defense"}</small><p>GPTBot · ClaudeBot · CCBot</p></article><article><b>{th ? "เกราะป้องกัน" : "Protective Wards"}</b><small>Security Headers</small><p>Content-Security-Policy · X-Frame-Options · Strict-Transport-Security</p></article><article><b>{th ? "รอยรั่วซ่อนเร้น" : "Crypt Leaks"}</b><small>Dev Leaks</small><p>/.env · /.git/HEAD</p></article></>}
           </div>
         </div>
       </Scene>
@@ -359,7 +473,22 @@ export default function Home() {
         <Motes />
         <div className="mist rites-mist" />
         <div className="glow rites-glow" />
-        <div className="grimoire-panel"><h2>Grimoire <span>· AI Remediation</span></h2>{scan ? <RemediationCard scan={scan} analysis={analysis} loading={phase === "analyzing"} error={aiError} onRetry={() => analyze(scan)} /> : <p>At the deepest point of the descent, your grade, plain-language diagnosis, and copy-ready repair code will appear.</p>}</div>
+        <div className="grimoire-panel">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[#ffbe76]">
+              {th ? "ขั้นตอนที่ 2 · สรุปวิธีแก้ไขและโค้ดพร้อมใช้" : "STEP 2 · REMEDIATION & READY-TO-COPY CODE"}
+            </span>
+            <button
+              type="button"
+              onClick={() => setArchiveOpen(true)}
+              className="rounded-md border border-violet-300/35 bg-violet-400/15 px-3 py-1 font-mono text-[11px] text-violet-100 transition hover:bg-violet-400/25"
+            >
+              {th ? "3. เปิดรายงานละเอียด (Cookies / CSP / พิมพ์ PDF)" : "3. Open Full Report (Cookies / CSP / PDF)"}
+            </button>
+          </div>
+          <h2>{th ? "คู่มือแก้ไข" : "Fix Guide"} <span>· {th ? "สรุปผลและโค้ดพร้อมใช้งาน" : "Remediation & Code"}</span></h2>
+          {scan ? <RemediationCard scan={scan} analysis={analysis} loading={phase === "analyzing"} error={aiError} onRetry={() => analyze(scan)} locale={locale} /> : <p>{th ? "เมื่อสแกนเสร็จ ระบบจะแสดงเกรด สรุปภาพรวม และโค้ดตั้งค่าที่คัดลอกไปวางใช้งานได้ทันที" : "Once scanned, your grade, plain-language diagnosis, and copy-ready repair code will appear here."}</p>}
+        </div>
       </Scene>
 
       <Seam src={assets.s3} fall="c" />
@@ -371,6 +500,7 @@ export default function Home() {
         <Flow lava cn="l3" />
         <Motes />
         <div className="glow night-glow" />
+        <CisaSceneSlider locale={locale} />
       </Scene>
 
       <Seam src={assets.s4} />
@@ -381,14 +511,14 @@ export default function Home() {
         <div className="glow finale-glow" />
         <Sprite name="g2" x={66} y={26} w={3} />
         <Sprite name="g1" x={27} y={38} w={2.6} />
-        <Copy title="See you at midnight." center>
-          <p>Carry your light down to the lake. The bells will tell you when.</p>
+        <Copy title={th ? "รายงานพร้อมแล้ว" : "See you at midnight."} center>
+          <p>{th ? "เปิดรายงานฉบับเต็มเพื่อดูรายละเอียดและวิธีแก้ไข" : "Carry your light down to the lake. The bells will tell you when."}</p>
           <div className="actions">
             <button type="button" className="button" onClick={() => setArchiveOpen(true)}>
-              Open full report
+              {th ? "เปิดรายงานฉบับเต็ม" : "Open full report"}
             </button>
             <a className="button ghost" href="#top">
-              Back to surface
+              {th ? "กลับไปด้านบน" : "Back to surface"}
             </a>
           </div>
         </Copy>
@@ -400,24 +530,53 @@ export default function Home() {
             <div className="halloween-orbs" aria-hidden><i /><i /><i /></div>
             <div className="relative z-10 mx-auto max-w-6xl px-4 py-10 sm:px-6">
               <header className="mb-8 text-center">
-                <button type="button" className="report-close" onClick={() => setArchiveOpen(false)} aria-label="Close full scan report">×</button>
+                <button type="button" className="report-close" onClick={() => setArchiveOpen(false)} aria-label={th ? "ปิดรายงานฉบับเต็ม" : "Close full scan report"}>×</button>
                 <div className="mb-4 flex flex-wrap items-center justify-center gap-3">
-                  <p className="halloween-chip orange"><MoonStar className="h-3.5 w-3.5" />Archive of Findings</p>
-                  <Link href="/vulnerabilities" className="halloween-chip purple"><Flame className="h-3.5 w-3.5" />Threat Intelligence (CISA KEV)</Link>
+                  <p className="halloween-chip orange"><MoonStar className="h-3.5 w-3.5" />{th ? "คลังข้อมูลผลการตรวจ" : "Archive of Findings"}</p>
+                  <Link href="/vulnerabilities" className="halloween-chip purple"><Flame className="h-3.5 w-3.5" />{th ? "ข่าวเตือนภัยช่องโหว่ (CISA KEV)" : "Threat Intelligence (CISA KEV)"}</Link>
                 </div>
-                <h2 id="report-title" className="text-3xl font-bold tracking-tight text-white drop-shadow-[0_0_24px_rgba(185,112,255,.5)] sm:text-5xl">Full scan report</h2>
-                <p className="mx-auto mt-3 max-w-2xl text-sm text-violet-100/75">Cookies, HTML inspection, CSP breakdown, raw headers and report export.</p>
+                <h2 id="report-title" className="text-3xl font-bold tracking-tight text-white drop-shadow-[0_0_24px_rgba(185,112,255,.5)] sm:text-5xl">
+                  {th ? "รายงานผลการตรวจฉบับเต็ม" : "Full scan report"}
+                </h2>
+                <p className="mx-auto mt-3 max-w-2xl text-sm text-violet-100/75">
+                  {th
+                    ? "ข้อมูลหลักฐานจากการตรวจสอบภายนอกแบบอ่านอย่างเดียว: เส้นทางการเปลี่ยนหน้า, ความปลอดภัยของคุกกี้, การตรวจโครงสร้าง HTML, รายละเอียด CSP, Raw Headers และการส่งออกรายงาน (ไม่ใช่การเจาะระบบ)"
+                    : "Passive external posture evidence: redirects, cookies, HTML inspection, CSP breakdown, raw headers and report export. This is not an intrusion test or a security guarantee."}
+                </p>
               </header>
 
               {error && <p role="alert" className="halloween-alert mx-auto mb-6 max-w-2xl rounded-xl px-4 py-3 text-sm text-orange-100">{error}</p>}
               {scan ? (
                 <div aria-live="polite">
-                  <p className="mb-5 font-mono text-sm text-violet-100/65">Results for <span className="text-emerald-200">{scan.url}</span>{scan.finalUrl && scan.finalUrl !== scan.url && <span className="ml-2 text-xs">→ {scan.finalUrl}</span>}</p>
-                  <div className="scanner-results grid gap-5 md:grid-cols-2"><CookieSecurityCard data={scan.cookies} /><HtmlInspectionCard data={scan.htmlFindings} /></div>
-                  <div className="scanner-results mt-5 grid gap-5"><ObservatoryTabs scan={scan} onSelectUrl={setUrl} /></div>
-                  <ReportActions scan={scan} analysis={analysis} />
+                  <p className="mb-5 font-mono text-sm text-violet-100/65">
+                    {th ? "ผลการตรวจสำหรับ " : "Results for "}
+                    <span className="text-emerald-200">{scan.url}</span>
+                    {scan.finalUrl && scan.finalUrl !== scan.url && <span className="ml-2 text-xs">→ {scan.finalUrl}</span>}
+                  </p>
+                  {scan.redirects && (
+                    <div className="mb-5 rounded-lg border border-neon-cyan/20 bg-ink-900/70 px-4 py-3 text-sm text-violet-100/80">
+                      <span className="font-mono font-semibold text-neon-cyan">
+                        {th ? "การเชื่อมต่อลิงก์ (Redirect):" : "Connection & Redirects:"}
+                      </span>
+                      <span className="ml-2">{formatRedirectSummary(scan.redirects, th)}</span>
+                    </div>
+                  )}
+                  <div className="scanner-results grid gap-5 md:grid-cols-2">
+                    <CookieSecurityCard data={scan.cookies} locale={locale} />
+                    <HtmlInspectionCard data={scan.htmlFindings} locale={locale} />
+                  </div>
+                  <div className="scanner-results mt-5 grid gap-5">
+                    <ObservatoryTabs scan={scan} onSelectUrl={setUrl} locale={locale} />
+                  </div>
+                  <ReportActions scan={scan} analysis={analysis} locale={locale} />
                 </div>
-              ) : <p className="halloween-glass mx-auto max-w-2xl rounded-xl p-5 text-center text-sm text-violet-100/70">Run a scan from the top of the page. Detailed results and report export will appear here.</p>}
+              ) : (
+                <p className="halloween-glass mx-auto max-w-2xl rounded-xl p-5 text-center text-sm text-violet-100/70">
+                  {th
+                    ? "กรุณาสแกนเว็บไซต์จากช่องด้านบนของหน้าก่อน รายละเอียดเชิงลึกและปุ่มดาวน์โหลดรายงานจะแสดงที่นี่"
+                    : "Run a scan from the top of the page. Detailed results and report export will appear here."}
+                </p>
+              )}
             </div>
           </section>
         </div>

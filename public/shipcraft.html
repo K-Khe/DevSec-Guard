@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shipcraft — CTA &amp; Footer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@8..144,100..900&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      --bg: #0D0D0D;
+      --white: #FFFFFF;
+      --grey-light: #ADADAD;
+      --grey-mid: #7D7D7D;
+      --grey-dim: #717171;
+      --amber: #F0A24C;
+      --social: #E0A165;
+      --wordmark: #5A3418;
+      --pill-bg: #1D1510;
+      --cta-start: #2C241D;
+      --cta-end: #7A5832;
+      --font: "Google Sans Flex", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      background-color: var(--bg);
+      color: var(--white);
+      font-family: var(--font);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      background:
+        radial-gradient(ellipse 60% 45% at 76% 18%, rgba(240, 162, 76, 0.14) 0%, rgba(240, 162, 76, 0) 70%),
+        radial-gradient(ellipse 80% 35% at 50% 100%, rgba(90, 52, 24, 0.28) 0%, rgba(13, 13, 13, 0) 75%),
+        var(--bg);
+    }
+
+    /* Reference artboard: 787x753 scaled via --u = container width / 787 */
+    .shipcraft-stage {
+      --stage-w: min(100vw, 1440px);
+      --u: calc(var(--stage-w) / 787);
+      position: relative;
+      width: var(--stage-w);
+      min-height: calc(753 * var(--u));
+      margin: 0 auto;
+      overflow: hidden;
+      background-color: var(--bg);
+      isolation: isolate;
+    }
+
+    /* Subtle top hairline & warm ambient glow */
+    .shipcraft-stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 78% 16%, rgba(240, 162, 76, 0.16), transparent 46%),
+        radial-gradient(circle at 50% 94%, rgba(240, 162, 76, 0.08), transparent 52%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ==================== CTA BAND ==================== */
+    .cta-band {
+      position: relative;
+      z-index: 2;
+      padding-top: calc(54 * var(--u));
+      padding-left: calc(48 * var(--u));
+      padding-right: calc(48 * var(--u));
+      padding-bottom: calc(46 * var(--u));
+      display: grid;
+      grid-template-columns: minmax(0, calc(360 * var(--u))) 1fr;
+      align-items: start;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .cta-copy {
+      position: relative;
+      z-index: 3;
+      max-width: calc(355 * var(--u));
+    }
+
+    /* Pill: dark #1D1510 with amber hairline & sparkle icon */
+    .cta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: calc(6 * var(--u));
+      padding: calc(4.5 * var(--u)) calc(11 * var(--u));
+      background: var(--pill-bg);
+      border: 1px solid rgba(240, 162, 76, 0.42);
+      border-radius: 999px;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        0 0 calc(16 * var(--u)) rgba(240, 162, 76, 0.15);
+      color: var(--amber);
+      font-size: calc(10.5 * var(--u));
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      line-height: 1;
+      margin-bottom: calc(16 * var(--u));
+    }
+
+    .cta-pill svg {
+      width: calc(11 * var(--u));
+      height: calc(11 * var(--u));
+      flex-shrink: 0;
+      fill: var(--amber);
+    }
+
+    /* Headline */
+    .cta-headline {
+      font-size: calc(40 * var(--u));
+      font-weight: 600;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: var(--white);
+      margin-bottom: calc(14 * var(--u));
+    }
+
+    .cta-headline .line-wrap {
+      display: block;
+      overflow: hidden;
+      padding-bottom: 0.04em;
+    }
+
+    .cta-headline .line-inner {
+      display: block;
+    }
+
+    .cta-description {
+      font-size: calc(12 * var(--u));
+      line-height: 1.55;
+      color: var(--grey-light);
+      font-weight: 400;
+      max-width: calc(315 * var(--u));
+      margin-bottom: calc(22 * var(--u));
+    }
+
+    /* Glossy amber-glass CTA button (#2C241D to #7A5832 gradient, lit white & amber rims, soft amber halo) */
+    .cta-button {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: calc(8 * var(--u));
+      padding: calc(10.5 * var(--u)) calc(20 * var(--u));
+      border-radius: calc(10 * var(--u));
+      background: linear-gradient(135deg, var(--cta-start) 0%, #4e3824 48%, var(--cta-end) 100%);
+      color: var(--white);
+      font-family: var(--font);
+      font-size: calc(12 * var(--u));
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      text-decoration: none;
+      border: 1px solid rgba(240, 162, 76, 0.58);
+      box-shadow:
+        inset 0 1.5px 0 rgba(255, 255, 255, 0.42),
+        inset 0 -1px 0 rgba(240, 162, 76, 0.45),
+        0 calc(8 * var(--u)) calc(26 * var(--u)) -4px rgba(240, 162, 76, 0.38),
+        0 0 calc(1 * var(--u)) 1px rgba(240, 162, 76, 0.22);
+      cursor: pointer;
+      transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
+      overflow: hidden;
+    }
+
+    .cta-button::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 52%);
+      pointer-events: none;
+    }
+
+    .cta-button:hover {
+      transform: translateY(-1.5px);
+      filter: brightness(1.08);
+      box-shadow:
+        inset 0 1.5px 0 rgba(255, 255, 255, 0.55),
+        inset 0 -1px 0 rgba(240, 162, 76, 0.65),
+        0 calc(12 * var(--u)) calc(32 * var(--u)) -2px rgba(240, 162, 76, 0.52);
+    }
+
+    .cta-button:active {
+      transform: translateY(0);
+    }
+
+    /* Tilted 3D editor panel bleeding off top-right */
+    .editor-wrap {
+      position: absolute;
+      top: calc(-26 * var(--u));
+      right: calc(-58 * var(--u));
+      width: calc(495 * var(--u));
+      pointer-events: none;
+      z-index: 1;
+      transform-origin: 65% 35%;
+      filter: drop-shadow(0 calc(16 * var(--u)) calc(42 * var(--u)) rgba(240, 162, 76, 0.18));
+    }
+
+    .editor-wrap::before {
+      content: "";
+      position: absolute;
+      top: 6%;
+      left: 14%;
+      right: 8%;
+      height: 36%;
+      background: radial-gradient(ellipse at center, rgba(240, 162, 76, 0.28) 0%, rgba(240, 162, 76, 0) 72%);
+      filter: blur(calc(20 * var(--u)));
+      z-index: -1;
+    }
+
+    .editor-img {
+      display: block;
+      width: 100%;
+      height: auto;
+      user-select: none;
+    }
+
+    /* ==================== FOUR-PART FOOTER ==================== */
+    .site-footer {
+      position: relative;
+      z-index: 3;
+      padding-top: calc(34 * var(--u));
+      padding-left: calc(48 * var(--u));
+      padding-right: calc(48 * var(--u));
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* Top row: Brand + 3 Link Columns */
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1.45fr repeat(3, 0.85fr);
+      gap: calc(24 * var(--u));
+      padding-bottom: calc(28 * var(--u));
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .brand-col {
+      display: flex;
+      flex-direction: column;
+      gap: calc(12 * var(--u));
+    }
+
+    .brand-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: calc(8 * var(--u));
+      text-decoration: none;
+      color: var(--white);
+      font-size: calc(15 * var(--u));
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-logo svg {
+      width: calc(20 * var(--u));
+      height: calc(20 * var(--u));
+      flex-shrink: 0;
+    }
+
+    .brand-blurb {
+      font-size: calc(10.5 * var(--u));
+      line-height: 1.55;
+      color: var(--grey-mid);
+      max-width: calc(225 * var(--u));
+    }
+
+    .social-row {
+      display: flex;
+      align-items: center;
+      gap: calc(10 * var(--u));
+      margin-top: calc(4 * var(--u));
+    }
+
+    .social-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: calc(26 * var(--u));
+      height: calc(26 * var(--u));
+      border-radius: calc(6 * var(--u));
+      border: 1px solid rgba(224, 161, 101, 0.24);
+      background: rgba(29, 21, 16, 0.55);
+      color: var(--social);
+      transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+    }
+
+    .social-link:hover {
+      border-color: var(--amber);
+      background: rgba(240, 162, 76, 0.14);
+      transform: translateY(-1px);
+    }
+
+    .social-link svg {
+      width: calc(13 * var(--u));
+      height: calc(13 * var(--u));
+      stroke: var(--social);
+      fill: none;
+    }
+
+    .footer-col h3 {
+      font-size: calc(11 * var(--u));
+      font-weight: 600;
+      color: var(--white);
+      letter-spacing: -0.01em;
+      margin-bottom: calc(11 * var(--u));
+    }
+
+    .footer-col ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: calc(7.5 * var(--u));
+    }
+
+    .footer-col a {
+      font-size: calc(10.5 * var(--u));
+      color: var(--grey-mid);
+      text-decoration: none;
+      transition: color 0.18s ease;
+    }
+
+    .footer-col a:hover {
+      color: var(--white);
+    }
+
+    /* Newsletter bar */
+    .newsletter-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: calc(20 * var(--u));
+      padding: calc(20 * var(--u)) 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .newsletter-label {
+      font-size: calc(11.5 * var(--u));
+      font-weight: 500;
+      color: var(--white);
+      letter-spacing: -0.01em;
+    }
+
+    .newsletter-controls {
+      display: flex;
+      align-items: center;
+      gap: calc(12 * var(--u));
+    }
+
+    .newsletter-form {
+      display: flex;
+      align-items: center;
+      padding: calc(3 * var(--u));
+      padding-left: calc(12 * var(--u));
+      border-radius: calc(9 * var(--u));
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(10px);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .newsletter-form:focus-within {
+      border-color: rgba(240, 162, 76, 0.55);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        0 0 calc(14 * var(--u)) rgba(240, 162, 76, 0.18);
+    }
+
+    .newsletter-input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--white);
+      font-family: var(--font);
+      font-size: calc(10.5 * var(--u));
+      width: calc(185 * var(--u));
+    }
+
+    .newsletter-input::placeholder {
+      color: var(--grey-dim);
+    }
+
+    /* Newsletter key with warm metal gradient */
+    .newsletter-key {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: calc(26 * var(--u));
+      height: calc(24 * var(--u));
+      border-radius: calc(6 * var(--u));
+      border: 1px solid rgba(240, 162, 76, 0.45);
+      background: linear-gradient(145deg, #3a2c20 0%, #6d4e2e 52%, #9a6e3e 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.35),
+        0 2px 6px rgba(0, 0, 0, 0.45);
+      color: var(--white);
+      cursor: pointer;
+      transition: filter 0.18s ease, transform 0.18s ease;
+    }
+
+    .newsletter-key:hover {
+      filter: brightness(1.12);
+      transform: translateX(1px);
+    }
+
+    .newsletter-key svg {
+      width: calc(12 * var(--u));
+      height: calc(12 * var(--u));
+    }
+
+    .newsletter-note {
+      font-size: calc(9.5 * var(--u));
+      color: var(--grey-dim);
+      white-space: nowrap;
+    }
+
+    /* Bottom sculpture hands + centred meta + giant sinking wordmark */
+    .footer-bottom-stage {
+      position: relative;
+      height: calc(215 * var(--u));
+      margin-left: calc(-48 * var(--u));
+      margin-right: calc(-48 * var(--u));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding-top: calc(24 * var(--u));
+      overflow: hidden;
+    }
+
+    .footer-meta {
+      position: relative;
+      z-index: 4;
+      display: inline-flex;
+      align-items: center;
+      gap: calc(14 * var(--u));
+      font-size: calc(10 * var(--u));
+      color: var(--grey-dim);
+      letter-spacing: 0.01em;
+    }
+
+    .footer-meta span.brand-credit {
+      color: var(--grey-light);
+      font-weight: 500;
+    }
+
+    .footer-meta .dot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: rgba(240, 162, 76, 0.45);
+    }
+
+    /* Carrara marble hands reaching in from left and right */
+    .hand-sculpture {
+      position: absolute;
+      top: calc(4 * var(--u));
+      height: auto;
+      pointer-events: none;
+      user-select: none;
+      z-index: 3;
+      filter: drop-shadow(0 calc(8 * var(--u)) calc(24 * var(--u)) rgba(0, 0, 0, 0.75));
+    }
+
+    .hand-left {
+      left: calc(-14 * var(--u));
+      width: calc(275 * var(--u));
+    }
+
+    .hand-right {
+      right: calc(-14 * var(--u));
+      width: calc(265 * var(--u));
+    }
+
+    /* Giant thin amber-brown "Shipcraft" wordmark sinking off the bottom edge */
+    .giant-wordmark {
+      position: absolute;
+      bottom: calc(-34 * var(--u));
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font);
+      font-size: calc(166 * var(--u));
+      font-weight: 200;
+      font-variation-settings: "wght" 200, "opsz" 144;
+      line-height: 0.82;
+      letter-spacing: -0.04em;
+      color: var(--wordmark);
+      white-space: nowrap;
+      user-select: none;
+      pointer-events: none;
+      z-index: 1;
+      background: linear-gradient(180deg, #7A4822 0%, var(--wordmark) 55%, #2A170A 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      opacity: 0.92;
+    }
+
+    /* ==================== ENTRANCE MOTION SEQUENCE ==================== */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes lineRise {
+      from {
+        opacity: 0;
+        transform: translateY(105%);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes riseFade {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes editorTiltIn {
+      from {
+        opacity: 0;
+        transform: translate3d(28px, 18px, 0) scale(0.93) rotate(2.5deg);
+      }
+      to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+      }
+    }
+
+    .cta-pill {
+      opacity: 0;
+      animation: fadeIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.08s forwards;
+    }
+
+    .cta-headline .line-wrap:nth-child(1) .line-inner {
+      opacity: 0;
+      animation: lineRise 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.22s forwards;
+    }
+
+    .cta-headline .line-wrap:nth-child(2) .line-inner {
+      opacity: 0;
+      animation: lineRise 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.34s forwards;
+    }
+
+    .cta-description {
+      opacity: 0;
+      animation: riseFade 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.48s forwards;
+    }
+
+    .cta-button {
+      opacity: 0;
+      animation: riseFade 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.58s forwards;
+    }
+
+    .editor-wrap {
+      opacity: 0;
+      animation: editorTiltIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.52s forwards;
+    }
+
+    .footer-grid > * {
+      opacity: 0;
+      animation: riseFade 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .footer-grid > *:nth-child(1) {
+      animation-delay: 0.72s;
+    }
+    .footer-grid > *:nth-child(2) {
+      animation-delay: 0.8s;
+    }
+    .footer-grid > *:nth-child(3) {
+      animation-delay: 0.88s;
+    }
+    .footer-grid > *:nth-child(4) {
+      animation-delay: 0.96s;
+    }
+
+    .newsletter-row {
+      opacity: 0;
+      animation: riseFade 0.55s cubic-bezier(0.22, 1, 0.36, 1) 1.04s forwards;
+    }
+
+    /* Reduced motion: none */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        transition: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    }
+
+    /* ==================== NARROWER SCREENS (< 900px) ==================== */
+    @media (max-width: 899px) {
+      .shipcraft-stage {
+        --u: 1.15px;
+        min-height: auto;
+      }
+
+      .cta-band {
+        grid-template-columns: 1fr;
+        padding: 48px 24px 36px;
+        gap: 28px;
+      }
+
+      .cta-copy {
+        max-width: 100%;
+      }
+
+      .cta-pill {
+        font-size: 12px;
+        padding: 6px 13px;
+        margin-bottom: 18px;
+      }
+
+      .cta-pill svg {
+        width: 13px;
+        height: 13px;
+      }
+
+      .cta-headline {
+        font-size: clamp(34px, 8vw, 48px);
+        margin-bottom: 14px;
+      }
+
+      .cta-description {
+        font-size: 15px;
+        max-width: 52ch;
+        margin-bottom: 24px;
+      }
+
+      .cta-button {
+        font-size: 14px;
+        padding: 12px 24px;
+        border-radius: 10px;
+      }
+
+      .editor-wrap {
+        position: relative;
+        top: 0;
+        right: 0;
+        width: min(100%, 560px);
+        margin: 8px auto 0;
+      }
+
+      .site-footer {
+        padding: 36px 24px 0;
+      }
+
+      .footer-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 28px 20px;
+        padding-bottom: 28px;
+      }
+
+      .brand-col {
+        grid-column: 1 / -1;
+      }
+
+      .brand-logo {
+        font-size: 18px;
+      }
+
+      .brand-logo svg {
+        width: 22px;
+        height: 22px;
+      }
+
+      .brand-blurb {
+        font-size: 13px;
+        max-width: 44ch;
+      }
+
+      .social-link {
+        width: 32px;
+        height: 32px;
+      }
+
+      .social-link svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      .footer-col h3 {
+        font-size: 13px;
+        margin-bottom: 12px;
+      }
+
+      .footer-col a {
+        font-size: 13px;
+      }
+
+      .newsletter-row {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 24px 0;
+        gap: 14px;
+      }
+
+      .newsletter-label {
+        font-size: 14px;
+      }
+
+      .newsletter-controls {
+        flex-wrap: wrap;
+        width: 100%;
+        gap: 10px;
+      }
+
+      .newsletter-form {
+        flex: 1 1 240px;
+        padding: 4px 4px 4px 12px;
+        border-radius: 9px;
+      }
+
+      .newsletter-input {
+        font-size: 13px;
+        width: 100%;
+      }
+
+      .newsletter-key {
+        width: 32px;
+        height: 30px;
+      }
+
+      .newsletter-note {
+        font-size: 12px;
+      }
+
+      .footer-bottom-stage {
+        height: clamp(180px, 34vw, 240px);
+        margin-left: -24px;
+        margin-right: -24px;
+        padding-top: 20px;
+      }
+
+      .footer-meta {
+        font-size: 12px;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: 0 16px;
+      }
+
+      .hand-left {
+        left: -18px;
+        width: clamp(140px, 34vw, 240px);
+        top: 26px;
+      }
+
+      .hand-right {
+        right: -18px;
+        width: clamp(135px, 33vw, 230px);
+        top: 26px;
+      }
+
+      .giant-wordmark {
+        font-size: clamp(72px, 21vw, 150px);
+        bottom: -18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="shipcraft-stage" aria-label="Shipcraft Call to Action and Footer">
+    <!-- ==================== CTA BAND ==================== -->
+    <div class="cta-band">
+      <div class="cta-copy">
+        <div class="cta-pill">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 1L9.65 6.35L15 8L9.65 9.65L8 15L6.35 9.65L1 8L6.35 6.35L8 1Z" />
+          </svg>
+          <span>Ship Your Idea</span>
+        </div>
+
+        <h1 class="cta-headline">
+          <span class="line-wrap"><span class="line-inner">Your next app</span></span>
+          <span class="line-wrap"><span class="line-inner">starts now.</span></span>
+        </h1>
+
+        <p class="cta-description">
+          Describe it, shape it in the canvas or code, ship it to the App Store, Play Store, or web. No install, no credit card.
+        </p>
+
+        <a href="#get-started" class="cta-button" id="ctaBtn">
+          <span>Get started now</span>
+        </a>
+      </div>
+
+      <div class="editor-wrap" aria-hidden="true">
+        <img
+          class="editor-img"
+          src="https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/5bc1d856-0342-40d4-b7ca-c490ac20624a.png"
+          width="912"
+          height="700"
+          alt="Shipcraft 3D Editor Panel showing Widget Tree and Code view"
+        />
+      </div>
+    </div>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="site-footer">
+      <!-- Part 1 & 2: Brand + Columns -->
+      <div class="footer-grid">
+        <div class="brand-col">
+          <a href="#top" class="brand-logo" aria-label="shipcraft home">
+            <!-- Original amber sail mark -->
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="sailGrad" x1="3" y1="3" x2="20" y2="21" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#FFD09B" />
+                  <stop offset="55%" stop-color="#F0A24C" />
+                  <stop offset="100%" stop-color="#8C5422" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M12.5 2.5C12.5 2.5 19.5 8.2 19.5 15.5H12.5V2.5Z"
+                fill="url(#sailGrad)"
+              />
+              <path
+                d="M10.5 5.5C6.8 8.3 4.8 12.1 4.5 15.5H10.5V5.5Z"
+                fill="#F0A24C"
+                fill-opacity="0.65"
+              />
+              <path
+                d="M3.5 17.5H20.5L18.4 20.2C17.9 20.8 17.1 21.1 16.3 21.1H7.7C6.9 21.1 6.1 20.8 5.6 20.2L3.5 17.5Z"
+                fill="#E0A165"
+              />
+            </svg>
+            <span>shipcraft</span>
+          </a>
+
+          <p class="brand-blurb">
+            Shipcraft keeps every surface in sync,<br />
+            so you never rebuild from scratch.
+          </p>
+
+          <div class="social-row" aria-label="Social media">
+            <!-- LinkedIn outline icon -->
+            <a href="#linkedin" class="social-link" aria-label="LinkedIn">
+              <svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+                <rect x="2" y="9" width="4" height="12" />
+                <circle cx="4" cy="4" r="2" />
+              </svg>
+            </a>
+            <!-- Instagram outline icon -->
+            <a href="#instagram" class="social-link" aria-label="Instagram">
+              <svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+              </svg>
+            </a>
+            <!-- YouTube outline icon -->
+            <a href="#youtube" class="social-link" aria-label="YouTube">
+              <svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" />
+                <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" />
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <nav class="footer-col" aria-label="Product">
+          <h3>Product</h3>
+          <ul>
+            <li><a href="#preview">Preview</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#how-it-works">How it works</a></li>
+            <li><a href="#developers">Developers</a></li>
+          </ul>
+        </nav>
+
+        <nav class="footer-col" aria-label="Resources">
+          <h3>Resources</h3>
+          <ul>
+            <li><a href="#blog">Blog</a></li>
+            <li><a href="#documentation">Documentation</a></li>
+            <li><a href="#videos">Videos</a></li>
+            <li><a href="#community">Community</a></li>
+          </ul>
+        </nav>
+
+        <nav class="footer-col" aria-label="Company">
+          <h3>Company</h3>
+          <ul>
+            <li><a href="#contact">Contact</a></li>
+            <li><a href="#privacy">Privacy</a></li>
+            <li><a href="#terms">Terms of Service</a></li>
+          </ul>
+        </nav>
+      </div>
+
+      <!-- Part 3: Newsletter -->
+      <div class="newsletter-row">
+        <span class="newsletter-label">Subscribe to our newsletter</span>
+        <div class="newsletter-controls">
+          <form class="newsletter-form" id="newsletterForm" novalidate>
+            <input
+              type="email"
+              class="newsletter-input"
+              id="newsletterEmail"
+              placeholder="jane@shipcraft.example"
+              aria-label="Email address"
+              required
+            />
+            <button type="submit" class="newsletter-key" aria-label="Subscribe">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="8" x2="13" y2="8" />
+                <polyline points="8.5 3.5 13 8 8.5 12.5" />
+              </svg>
+            </button>
+          </form>
+          <span class="newsletter-note" id="newsletterFeedback">Unsubscribe anytime</span>
+        </div>
+      </div>
+
+      <!-- Part 4: Bottom bar with marble hands & giant sinking wordmark -->
+      <div class="footer-bottom-stage">
+        <img
+          class="hand-sculpture hand-left"
+          src="https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/4c029f38-d0a0-46d1-9ebc-3edcdaa11fc1.png"
+          width="582"
+          height="290"
+          alt=""
+          aria-hidden="true"
+        />
+
+        <div class="footer-meta">
+          <span>©2026</span>
+          <span class="dot" aria-hidden="true"></span>
+          <span class="brand-credit">Shipcraft</span>
+          <span class="dot" aria-hidden="true"></span>
+          <span>Build a real app, fast.</span>
+        </div>
+
+        <img
+          class="hand-sculpture hand-right"
+          src="https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/7eba3f06-a99e-44b8-bd46-7ccfaf6b2363.png"
+          width="558"
+          height="328"
+          alt=""
+          aria-hidden="true"
+        />
+
+        <div class="giant-wordmark" aria-hidden="true">Shipcraft</div>
+      </div>
+    </footer>
+  </section>
+
+  <script>
+    (function () {
+      const form = document.getElementById("newsletterForm");
+      const input = document.getElementById("newsletterEmail");
+      const feedback = document.getElementById("newsletterFeedback");
+
+      if (form && input && feedback) {
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          const val = input.value.trim();
+          if (!val || !val.includes("@")) {
+            feedback.textContent = "Enter a valid .example email";
+            feedback.style.color = "#F0A24C";
+            return;
+          }
+          input.value = "";
+          feedback.textContent = "Subscribed — welcome aboard.";
+          feedback.style.color = "#F0A24C";
+          setTimeout(function () {
+            feedback.textContent = "Unsubscribe anytime";
+            feedback.style.color = "";
+          }, 3200);
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
+

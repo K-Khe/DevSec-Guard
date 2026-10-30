@@ -9,6 +9,7 @@ interface Props {
   onSubmit: () => void;
   busy: boolean;
   label: string;
+  locale?: "th" | "en";
   /** "full" = URL + submit + options. "options" = only the mode selector and authorization checkbox. */
   variant?: "full" | "options";
 }
@@ -21,6 +22,7 @@ export default function ScanForm({
   onSubmit,
   busy,
   label,
+  locale = "th",
   variant = "full",
 }: Props) {
   return (
@@ -45,7 +47,7 @@ export default function ScanForm({
             value={url}
             onChange={(e) => onChange(e.target.value)}
             placeholder="example.com"
-            aria-label="Target URL"
+            aria-label={locale === "th" ? "URL เว็บไซต์ที่ต้องการตรวจ" : "Target URL"}
             disabled={busy}
             className="w-full bg-transparent py-3.5 font-mono text-sm text-white placeholder:text-slate-600 focus:outline-none disabled:opacity-60"
           />
@@ -61,7 +63,7 @@ export default function ScanForm({
       </div>
       )}
 
-      <div className="grid gap-2.5 sm:grid-cols-2" role="radiogroup" aria-label="Remediation privacy mode">
+      <div className="grid gap-2.5 sm:grid-cols-2" role="radiogroup" aria-label={locale === "th" ? "โหมดวิเคราะห์" : "Remediation privacy mode"}>
         <button
           type="button"
           onClick={() => onModeChange("ai-anonymized")}
@@ -75,9 +77,9 @@ export default function ScanForm({
         >
           <EyeOff className="mt-0.5 h-4 w-4 shrink-0 text-neon-purple" />
           <span>
-            <strong className="block font-mono text-slate-200">AI Auditor (Target Anonymized)</strong>
+            <strong className="block font-mono text-slate-200">AI Auditor {locale === "th" ? "(ปกปิดชื่อเว็บ)" : "(Target Anonymized)"}</strong>
             <span className="text-[11px] text-slate-400">
-              ปกปิดชื่อโดเมน (`redacted-target.invalid`) ก่อนส่งวิเคราะห์ด้วย AI เพื่อป้องกันข้อมูลช่องโหว่ผูกกับเว็บจริง
+              {locale === "th" ? "ปกปิดชื่อโดเมน (`redacted-target.invalid`) ก่อนส่งวิเคราะห์ด้วย AI เพื่อไม่ผูกข้อมูลช่องโหว่กับเว็บจริง" : "Redacts the domain before AI explanation so findings are not linked to the real site."}
             </span>
           </span>
         </button>
@@ -95,9 +97,9 @@ export default function ScanForm({
         >
           <Lock className="mt-0.5 h-4 w-4 shrink-0 text-neon-green" />
           <span>
-            <strong className="block font-mono text-slate-200">100% Local Engine (Zero External AI)</strong>
+            <strong className="block font-mono text-slate-200">100% Local Engine {locale === "th" ? "(ไม่ใช้ AI ภายนอก)" : "(Zero External AI)"}</strong>
             <span className="text-[11px] text-slate-400">
-              สร้างสรุปผลและโค้ดแก้ไขภายในเซิร์ฟเวอร์ 100% ไม่ส่งข้อมูลใดๆ ออกไปยัง AI ภายนอก
+              {locale === "th" ? "สร้างสรุปผลและโค้ดแก้ไขภายในเซิร์ฟเวอร์ 100% ไม่ส่งข้อมูลไปยัง AI ภายนอก" : "Builds explanations and remediation inside the server without sending data to external AI."}
             </span>
           </span>
         </button>
@@ -105,7 +107,7 @@ export default function ScanForm({
 
       <p className="flex items-center gap-1.5 px-1 text-[11px] leading-relaxed text-slate-500">
         <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-neon-cyan" />
-        Public, read-only HTTP checks only. Private networks and restricted domains are blocked.
+        {locale === "th" ? "ตรวจเฉพาะข้อมูล HTTP สาธารณะแบบอ่านอย่างเดียว ระบบบล็อกเครือข่ายภายในและโดเมนที่จำกัดสิทธิ์" : "Public, read-only HTTP checks only. Private networks and restricted domains are blocked."}
       </p>
     </form>
   );

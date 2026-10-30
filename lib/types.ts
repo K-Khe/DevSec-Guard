@@ -83,6 +83,32 @@ export interface HtmlFinding {
   note: string;
 }
 
+export type RedirectChainStatus =
+  | "no_redirect"
+  | "http_upgraded"
+  | "clean_secure"
+  | "insecure_start"
+  | "invalid_first_upgrade"
+  | "downgrade_detected"
+  | "max_hops_exceeded"
+  | "invalid_redirect";
+
+export interface RedirectHop {
+  hopIndex: number;
+  statusCode: number;
+  protocol: "http" | "https";
+  hostChangedFromPrevious: boolean;
+}
+
+export interface CrawledPage {
+  path: string;
+  url: string;
+  status: number | null;
+  findingsCount: number;
+  cookiesCount: number;
+  findings: string[];
+}
+
 export interface ScanResult {
   url: string;
   finalUrl?: string;
@@ -104,6 +130,10 @@ export interface ScanResult {
   cookies: CookieCheck[];
   htmlFindings: HtmlFinding[];
   leaks: LeakCheck[];
+  redirects?: { status: RedirectChainStatus; secure: boolean; hops: RedirectHop[] };
+  crawledPages?: CrawledPage[];
+  /** Present only when a server-side, expiring scan record was secured successfully. */
+  capabilityToken?: string;
 }
 
 export type AnalysisMode = "local" | "ai-anonymized";

@@ -1,0 +1,232 @@
+
+> devsec-guard@0.1.0 dev
+> next dev --hostname 127.0.0.1
+
+  ▲ Next.js 14.2.35
+  - Local:        http://127.0.0.1:3000
+  - Network:      http://127.0.0.1:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 21.1s
+ ○ Compiling / ...
+ ✓ Compiled / in 24.5s (676 modules)
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 1336ms (366 modules)
+ GET /favicon.ico 200 in 1900ms
+ GET /favicon.ico 200 in 1926ms
+ GET / 200 in 524ms
+ GET /favicon.ico 200 in 164ms
+ ✓ Compiled in 3.5s (658 modules)
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 2.3s (661 modules)
+ GET /icons/icon-512.png 404 in 2739ms
+ GET /icons/icon-192.png 404 in 2772ms
+ GET /icons/maskable-512.png 404 in 2736ms
+ GET /icons/maskable-512.png 404 in 103ms
+ GET /icons/icon-512.png 404 in 94ms
+ GET /icons/icon-192.png 404 in 100ms
+ GET / 200 in 261ms
+ ✓ Compiled in 1880ms (658 modules)
+ ✓ Compiled in 2.3s (658 modules)
+ ✓ Compiled in 2.1s (658 modules)
+ GET / 200 in 610ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 1757ms (366 modules)
+ GET /favicon.ico 200 in 2081ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 12.9s (661 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 14778ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 230ms
+ ✓ Compiled in 2.4s (658 modules)
+ ✓ Compiled /_not-found in 518ms (647 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 742ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 64ms
+ GET / 200 in 596ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 1121ms (367 modules)
+ GET /favicon.ico 200 in 1776ms
+ GET / 200 in 1024ms
+ GET /favicon.ico 200 in 56ms
+ GET / 200 in 253ms
+ GET /favicon.ico 200 in 160ms
+ ✓ Compiled in 6s (658 modules)
+ GET / 200 in 1261ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 1269ms (366 modules)
+ GET /favicon.ico 200 in 2004ms
+ GET / 200 in 717ms
+ ✓ Compiled in 5s (658 modules)
+ GET / 200 in 857ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 985ms (366 modules)
+ GET /favicon.ico 200 in 1396ms
+ ✓ Compiled in 2.8s (658 modules)
+ GET / 200 in 898ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 987ms (366 modules)
+ GET /favicon.ico 200 in 1516ms
+ ✓ Compiled in 1395ms (658 modules)
+ ✓ Compiled in 536ms (324 modules)
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 5s (870 modules)
+ GET / 200 in 308ms
+ GET / 200 in 520ms
+ GET / 200 in 178ms
+ ✓ Compiled /favicon.ico in 389ms (406 modules)
+ GET /favicon.ico 200 in 662ms
+ ○ Compiling /vulnerabilities ...
+ ✓ Compiled /vulnerabilities in 2.4s (903 modules)
+ ✓ Compiled in 1941ms (510 modules)
+ ✓ Compiled in 1832ms (903 modules)
+ ✓ Compiled in 727ms (510 modules)
+ ✓ Compiled in 3.1s (901 modules)
+ ✓ Compiled in 3.7s (901 modules)
+ ✓ Compiled in 12.5s (901 modules)
+ ✓ Compiled in 6.8s (901 modules)
+ GET / 200 in 6332ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 19.8s (933 modules)
+ GET /favicon.ico 200 in 21259ms
+ GET /favicon.ico 200 in 1108ms
+ GET /favicon.ico 200 in 155ms
+ GET / 200 in 1025ms
+ GET /favicon.ico 200 in 79ms
+ ✓ Compiled in 3.6s (933 modules)
+ ✓ Compiled in 5.8s (901 modules)
+ ✓ Compiled in 3.3s (901 modules)
+ ✓ Compiled in 2.8s (901 modules)
+ GET / 200 in 1999ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 759ms (416 modules)
+ GET /favicon.ico 200 in 939ms
+ ✓ Compiled in 2.8s (919 modules)
+ ✓ Compiled in 890ms (517 modules)
+ ✓ Compiled in 6.9s (909 modules)
+ ○ Compiling /api/vulnerabilities ...
+ ✓ Compiled /api/vulnerabilities in 1255ms (416 modules)
+ GET /api/vulnerabilities 200 in 3464ms
+ GET /api/vulnerabilities 200 in 3557ms
+ GET /api/vulnerabilities 200 in 479ms
+ GET /api/vulnerabilities 200 in 431ms
+ GET /api/vulnerabilities 200 in 389ms
+ GET /api/vulnerabilities 200 in 427ms
+ ✓ Compiled in 1933ms (937 modules)
+ ✓ Compiled in 5.9s (909 modules)
+ ○ Compiling /api/vulnerabilities ...
+ ✓ Compiled /api/vulnerabilities in 7.6s (913 modules)
+ ✓ Compiled in 34ms (418 modules)
+ GET /api/vulnerabilities 200 in 9100ms
+ GET /api/vulnerabilities 200 in 13217ms
+ GET /api/vulnerabilities 200 in 1711ms
+ GET /api/vulnerabilities 200 in 1858ms
+ GET /api/vulnerabilities 200 in 2280ms
+ GET /api/vulnerabilities 200 in 606ms
+ ✓ Compiled in 2.9s (941 modules)
+ GET /api/vulnerabilities 200 in 1750ms
+ GET /api/vulnerabilities 200 in 930ms
+ ✓ Compiled in 13.1s (941 modules)
+ ✓ Compiled in 2ms (418 modules)
+ ✓ Compiled in 3ms (418 modules)
+ ✓ Compiled in 1ms (418 modules)
+ GET /api/vulnerabilities 200 in 9545ms
+ GET /api/vulnerabilities 200 in 10768ms
+ GET /api/vulnerabilities 200 in 2811ms
+ GET /api/vulnerabilities 200 in 3003ms
+ GET /api/vulnerabilities 200 in 1153ms
+ GET /api/vulnerabilities 200 in 1023ms
+ ○ Compiling /api/scan ...
+ ✓ Compiled /api/scan in 8.3s (537 modules)
+{"ts":"2026-10-30T17:14:18.076Z","type":"security_audit","action":"scan.completed","actor":"73c2019834296cc8","status":200,"target":"https://sdu.slf.coolify.neutronhost.com/","durationMs":3554,"meta":{"score":10,"grade":"F","testsPassed":4,"testsTotal":10,"detectedStack":["Next.js"],"exposedLeaks":[]}}
+ POST /api/scan 200 in 13011ms
+ ○ Compiling /api/analyze ...
+ ✓ Compiled /api/analyze in 8.6s (641 modules)
+{"ts":"2026-10-30T17:14:33.960Z","type":"security_audit","action":"analyze.completed","actor":"73c2019834296cc8","status":200,"durationMs":5989,"meta":{"mode":"ai-anonymized","grade":"F","score":10,"cached":false}}
+ POST /api/analyze 200 in 15846ms
+ ✓ Compiled in 7.8s (913 modules)
+ GET / 200 in 1214ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 2.4s (422 modules)
+ GET /favicon.ico 200 in 3249ms
+ ○ Compiling /api/vulnerabilities ...
+ ✓ Compiled /api/vulnerabilities in 3.6s (447 modules)
+ GET /api/vulnerabilities 200 in 8268ms
+ GET /api/vulnerabilities 200 in 1226ms
+ ✓ Compiled in 5.4s (970 modules)
+ GET / 200 in 1081ms
+ GET /favicon.ico 200 in 455ms
+ GET /api/vulnerabilities 200 in 2036ms
+ GET /api/vulnerabilities 200 in 881ms
+ ✓ Compiled in 5.6s (913 modules)
+ ✓ Compiled in 2.5s (913 modules)
+ GET / 200 in 330ms
+ ○ Compiling /api/vulnerabilities ...
+ ✓ Compiled /api/vulnerabilities in 677ms (422 modules)
+ ✓ Compiled (447 modules)
+ GET /favicon.ico 200 in 2040ms
+ GET /api/vulnerabilities 200 in 2559ms
+ GET /api/vulnerabilities 200 in 434ms
+ ✓ Compiled in 3.9s (913 modules)
+ ✓ Compiled in 931ms (523 modules)
+ ✓ Compiled in 1588ms (913 modules)
+ ✓ Compiled in 1173ms (913 modules)
+ ✓ Compiled in 949ms (913 modules)
+ ✓ Compiled in 1406ms (913 modules)
+ ✓ Compiled in 1637ms (913 modules)
+ ✓ Compiled in 1287ms (913 modules)
+ ✓ Compiled in 6.5s (913 modules)
+ ✓ Compiled in 1357ms (523 modules)
+ ✓ Compiled in 802ms (523 modules)
+ ✓ Compiled in 621ms (523 modules)
+ ✓ Compiled in 1637ms (913 modules)
+ ✓ Compiled in 1373ms (913 modules)
+ ✓ Compiled in 896ms (913 modules)
+ ✓ Compiled in 1557ms (913 modules)
+ ✓ Compiled in 1601ms (913 modules)
+ ✓ Compiled in 1048ms (913 modules)
+ ✓ Compiled in 1427ms (913 modules)
+ ○ Compiling /api/scan ...
+ ✓ Compiled /api/scan in 2.2s (537 modules)
+{"ts":"2026-10-30T17:55:15.440Z","type":"security_audit","action":"scan.completed","actor":"73c2019834296cc8","status":200,"target":"https://sdu.slf.coolify.neutronhost.com/","durationMs":1946,"meta":{"score":10,"grade":"F","testsPassed":4,"testsTotal":10,"detectedStack":["Next.js"],"exposedLeaks":[]}}
+ POST /api/scan 200 in 4645ms
+ ○ Compiling /api/analyze ...
+ ✓ Compiled /api/analyze in 1408ms (640 modules)
+{"ts":"2026-10-30T17:55:20.505Z","type":"security_audit","action":"analyze.completed","actor":"73c2019834296cc8","status":200,"durationMs":3053,"meta":{"mode":"ai-anonymized","grade":"F","score":10,"cached":false}}
+ POST /api/analyze 200 in 5048ms
+ ✓ Compiled in 2.7s (913 modules)
+ GET / 200 in 1264ms
+ ✓ Compiled in 4s (913 modules)
+ ○ Compiling /api/vulnerabilities ...
+ ✓ Compiled /api/vulnerabilities in 680ms (422 modules)
+ ✓ Compiled (447 modules)
+ GET /favicon.ico 200 in 1462ms
+ GET /api/vulnerabilities 200 in 2630ms
+ GET /api/vulnerabilities 200 in 504ms
+ ✓ Compiled in 1316ms (970 modules)
+ ✓ Compiled in 1261ms (970 modules)
+ ○ Compiling /api/scan ...
+ ✓ Compiled /api/scan in 2.6s (537 modules)
+{"ts":"2026-10-30T18:03:32.788Z","type":"security_audit","action":"scan.completed","actor":"73c2019834296cc8","status":200,"target":"https://register.ywc.in.th/announcement/interview/confirm","durationMs":2398,"meta":{"score":22,"grade":"F","testsPassed":4,"testsTotal":10,"detectedStack":["Cloudflare"],"exposedLeaks":[]}}
+ POST /api/scan 200 in 5466ms
+ ○ Compiling /api/analyze ...
+ ✓ Compiled /api/analyze in 1185ms (640 modules)
+{"ts":"2026-10-30T18:03:37.752Z","type":"security_audit","action":"analyze.completed","actor":"73c2019834296cc8","status":200,"durationMs":3173,"meta":{"mode":"ai-anonymized","grade":"F","score":22,"cached":false}}
+ POST /api/analyze 200 in 4961ms
+ ✓ Compiled in 5.8s (913 modules)
+ ✓ Compiled in 789ms (523 modules)
+ ○ Compiling /api/scan ...
+ ✓ Compiled /api/scan in 1249ms (537 modules)
+{"ts":"2026-10-30T18:10:40.595Z","type":"security_audit","action":"scan.completed","actor":"73c2019834296cc8","status":200,"target":"https://register.ywc.in.th/","durationMs":2848,"meta":{"score":22,"grade":"F","testsPassed":4,"testsTotal":10,"detectedStack":["Cloudflare"],"exposedLeaks":[]}}
+ POST /api/scan 200 in 4692ms
+ ○ Compiling /api/analyze ...
+ ✓ Compiled /api/analyze in 750ms (640 modules)
+{"ts":"2026-10-30T18:10:44.828Z","type":"security_audit","action":"analyze.completed","actor":"73c2019834296cc8","status":200,"durationMs":2857,"meta":{"mode":"ai-anonymized","grade":"F","score":22,"cached":false}}
+ POST /api/analyze 200 in 4251ms
+{"ts":"2026-10-30T18:13:44.357Z","type":"security_audit","action":"scan.completed","actor":"73c2019834296cc8","status":200,"target":"https://www.ywc.in.th/?fbclid=IwY2xjawVRvXpleHRuA2FlbQIxMABwZG9mBWJyaWQRMTI4ajEwMElFYkcyNkpjSGtzcnRjBmFwcF9pZBAyMjIwMzkxNzg4MjAwODkyAAEfLeKz5CPiitL0ginKHUEO7wg7XGQ_DYvLhvXZB6x9IXcA0mcSnZMVBFBk7i4_aem_Aih7q3Yvr5BE7WwaxCuVCg","durationMs":1008,"meta":{"score":27,"grade":"D","testsPassed":5,"testsTotal":10,"detectedStack":["Cloudflare"],"exposedLeaks":[]}}
+ POST /api/scan 200 in 1158ms
+{"ts":"2026-10-30T18:13:47.195Z","type":"security_audit","action":"analyze.completed","actor":"73c2019834296cc8","status":200,"durationMs":2775,"meta":{"mode":"ai-anonymized","grade":"D","score":27,"cached":false}}
+ POST /api/analyze 200 in 2829ms
+ ✓ Compiled in 4.7s (913 modules)
+ ✓ Compiled in 2.7s (913 modules)
+ ✓ Compiled in 2.1s (913 modules)
+ ✓ Compiled in 1353ms (913 modules)
