@@ -376,3 +376,11 @@ npm run build
 * **Security & Networking Engine:** Native `fetch` API, `undici` (Custom Agent สำหรับ DNS Pinning), Node.js `dns` & `crypto` (SHA-256 & 256-bit Capability Tokens), Upstash Redis REST
 * **Threat Intelligence & Remediation:** CISA KEV Live Feed, Google Gemini / OpenAI REST API (JSON Schema Mode) + 100% Local Deterministic Remediation Engine
 * **Testing & Quality Assurance:** Vitest (33 Unit & Security Tests), ESLint
+
+---
+
+## 🎨 การออกแบบและแรงบันดาลใจ (Design & Credits)
+
+* **UI/UX & Motion Architecture:** ได้รับแรงบันดาลใจจากแนวคิดและสไตล์อนิเมชันของ [MotionSites AI](https://motionsites.ai/) — เน้นโครงสร้าง High-end Dark Aesthetic, Glassmorphism, Micro-interactions ที่ลื่นไหล และ Bento Grid Presentation เพื่อเปลี่ยนเครื่องมือ Security ที่มักดูซับซ้อนและน่าเบื่อ ให้กลายเป็นประสบการณ์ที่เข้าใจง่าย น่าใช้งาน และมีมิติ
+* **Visual Narrative Theme:** "Hollowmere — A Night of Lanterns" — ถ่ายทอดการดำดิ่งตรวจสอบความปลอดภัยทีละขั้น (Visual Descent) ผ่าน 5 ซีนบรรยากาศโคมไฟและแสงนีออนเรืองแสง
+
