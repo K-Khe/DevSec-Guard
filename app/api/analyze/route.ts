@@ -25,7 +25,6 @@ import {
   releaseAnalysisLock,
   waitForCachedAnalysis,
 } from "@/lib/analysisCache";
-import { compileStaticRemediation } from "@/lib/remediationRegistry";
 import { loadTrustedEvidence, toRedactedScan, TrustedEvidenceError } from "@/lib/trustedEvidence";
 
 export const runtime = "nodejs";

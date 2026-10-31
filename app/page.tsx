@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Flame, MoonStar } from "lucide-react";
+import { ArrowUp, Bot, FileWarning, Flame, MoonStar, ShieldHalf, Sparkles } from "lucide-react";
 import ScanForm from "@/components/ScanForm";
 import RemediationCard from "@/components/RemediationCard";
 import ObservatoryTabs from "@/components/ObservatoryTabs";
@@ -445,6 +445,47 @@ export default function Home() {
             </div>
             <h2>{th ? "สรุปเกราะป้องกันเว็บไซต์" : "Protective Wards"}</h2>
             <p>{scan ? (th ? `ผลตรวจจากภายนอกสำหรับ ${scan.url}` : `External findings for ${scan.url}`) : th ? "ใส่ชื่อเว็บด้านบนแล้วกดเริ่มสแกน ระบบจะสรุปผลตรวจทั้ง 3 ด้านให้ที่นี่" : "Enter a URL above and click Scan to view your three core checks here."}</p>
+            {!scan && (
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-neon-cyan/40 bg-neon-cyan/10 px-2.5 py-0.5 font-mono text-[11px] text-neon-cyan">
+                  <Sparkles className="h-3 w-3" />
+                  {th ? "ตรวจลึกรวม 10 มิติ" : "10 In-Depth Dimensions"}
+                </span>
+                <span className="text-xs text-slate-300/80">
+                  {th
+                    ? "• พร้อมตรวจคุกกี้, ผ่าลึก CSP 7 จุด, ไต่ลิงก์หน้าย่อยอัตโนมัติ และตรวจโค้ด HTML ในรายงานละเอียด"
+                    : "• Includes Cookie audit, 7-Point CSP breakdown, Subpage crawler & HTML inspection in full report"}
+                </span>
+              </div>
+            )}
+            {!scan && (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                    const input = document.querySelector<HTMLInputElement>("#scanner input");
+                    input?.focus({ preventScroll: true });
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300/40 bg-amber-400/15 px-3 py-1.5 font-mono text-xs font-semibold text-amber-200 shadow transition hover:bg-amber-400/25 hover:text-white"
+                >
+                  <ArrowUp className="h-3.5 w-3.5" />
+                  {th ? "เลื่อนขึ้นไปเริ่มสแกนเว็บ ↑" : "Scroll up to start scanning ↑"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUrl("https://www.ywc.in.th");
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                    const input = document.querySelector<HTMLInputElement>("#scanner input");
+                    input?.focus({ preventScroll: true });
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 font-mono text-xs text-slate-300 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+                >
+                  {th ? "ลองตัวอย่าง: ywc.in.th" : "Try sample: ywc.in.th"}
+                </button>
+              </div>
+            )}
             {scan && headerPosture && (
               <div className="result-metrics" aria-label="Scan score summary">
                 <span><b>{th ? "คะแนน Header" : "Header score"}</b> {headerPosture.score}/100 · {headerPosture.strong}/{headerPosture.total} {th ? "รายการผ่านเกณฑ์" : "strong"}</span>
@@ -461,7 +502,64 @@ export default function Home() {
             )}
           </header>
           <div className="ward-grid">
-            {scan ? <><ScraperDefenseCard data={scan.robots} locale={locale} /><SecurityHeadersCard data={scan.headers} locale={locale} /><DevLeaksCard data={scan.leaks} locale={locale} /></> : <><article><b>{th ? "บอตเงา" : "Phantom Crawlers"}</b><small>{th ? "การป้องกัน AI Scraper" : "AI Scraper Defense"}</small><p>GPTBot · ClaudeBot · CCBot</p></article><article><b>{th ? "เกราะป้องกัน" : "Protective Wards"}</b><small>Security Headers</small><p>Content-Security-Policy · X-Frame-Options · Strict-Transport-Security</p></article><article><b>{th ? "รอยรั่วซ่อนเร้น" : "Crypt Leaks"}</b><small>Dev Leaks</small><p>/.env · /.git/HEAD</p></article></>}
+            {scan ? (
+              <>
+                <ScraperDefenseCard data={scan.robots} locale={locale} />
+                <SecurityHeadersCard data={scan.headers} locale={locale} />
+                <DevLeaksCard data={scan.leaks} locale={locale} />
+              </>
+            ) : (
+              <>
+                <article>
+                  <b className="flex items-center gap-1.5 text-[#fff4db]">
+                    <Bot className="h-4 w-4 text-neon-purple" />
+                    {th ? "บอตเงา" : "Phantom Crawlers"}
+                  </b>
+                  <small className="text-neon-purple/90 font-medium">
+                    {th ? "การป้องกัน AI Scraper" : "AI Scraper Defense"}
+                  </small>
+                  <div className="mt-3 flex flex-wrap gap-1.5 font-mono text-[11px]">
+                    <span className="rounded bg-white/10 px-2 py-0.5 text-slate-200">GPTBot</span>
+                    <span className="rounded bg-white/10 px-2 py-0.5 text-slate-200">ClaudeBot</span>
+                    <span className="rounded bg-white/10 px-2 py-0.5 text-slate-200">CCBot</span>
+                    <span className="rounded bg-white/5 px-2 py-0.5 text-slate-400">Google-Extended</span>
+                  </div>
+                </article>
+                <article>
+                  <b className="flex items-center gap-1.5 text-[#fff4db]">
+                    <ShieldHalf className="h-4 w-4 text-neon-cyan" />
+                    {th ? "เกราะป้องกัน" : "Protective Wards"}
+                  </b>
+                  <small className="text-neon-cyan/90 font-medium">
+                    {th ? "Security Headers (6 รายการ + CSP)" : "Security Headers (6 Rules + CSP)"}
+                  </small>
+                  <div className="mt-3 flex flex-wrap gap-1.5 font-mono text-[11px]">
+                    <span className="rounded bg-white/10 px-2 py-0.5 text-slate-200">CSP (7 จุด)</span>
+                    <span className="rounded bg-white/10 px-2 py-0.5 text-slate-200">HSTS</span>
+                    <span className="rounded bg-white/10 px-2 py-0.5 text-slate-200">X-Frame-Options</span>
+                    <span className="rounded bg-white/10 px-2 py-0.5 text-slate-200">nosniff</span>
+                    <span className="rounded bg-white/5 px-2 py-0.5 text-slate-400">Referrer</span>
+                    <span className="rounded bg-white/5 px-2 py-0.5 text-slate-400">Permissions</span>
+                  </div>
+                </article>
+                <article>
+                  <b className="flex items-center gap-1.5 text-[#fff4db]">
+                    <FileWarning className="h-4 w-4 text-emerald-400" />
+                    {th ? "รอยรั่วซ่อนเร้น" : "Crypt Leaks"}
+                  </b>
+                  <small className="text-emerald-400/90 font-medium">
+                    {th ? "Dev Leaks (ตรวจจับ Signature)" : "Dev Leaks (Signature Check)"}
+                  </small>
+                  <div className="mt-3 flex flex-wrap gap-1.5 font-mono text-[11px]">
+                    <span className="rounded bg-white/10 px-2 py-0.5 text-slate-200">/.env</span>
+                    <span className="rounded bg-white/10 px-2 py-0.5 text-slate-200">/.git/HEAD</span>
+                    <span className="rounded border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-emerald-300">
+                      {th ? "แยกไฟล์จริง vs 404" : "Real file vs soft-200"}
+                    </span>
+                  </div>
+                </article>
+              </>
+            )}
           </div>
         </div>
       </Scene>
