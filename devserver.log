@@ -472,3 +472,5 @@
  GET / 500 in 81ms
  GET / 500 in 185ms
  GET / 500 in 628ms
+ GET / 500 in 1553ms
+ GET / 500 in 165ms

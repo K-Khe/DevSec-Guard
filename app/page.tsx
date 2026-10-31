@@ -475,14 +475,14 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => {
-                    setUrl("https://www.ywc.in.th");
+                    setUrl("https://example.com");
                     window.scrollTo({ top: 0, behavior: "smooth" });
                     const input = document.querySelector<HTMLInputElement>("#scanner input");
                     input?.focus({ preventScroll: true });
                   }}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 font-mono text-xs text-slate-300 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
                 >
-                  {th ? "ลองตัวอย่าง: ywc.in.th" : "Try sample: ywc.in.th"}
+                  {th ? "ลองตัวอย่าง: example.com" : "Try sample: example.com"}
                 </button>
               </div>
             )}
